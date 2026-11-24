@@ -222,3 +222,63 @@ details.card summary{font-family:"Pirata One",Georgia,serif;font-weight:400;font
   #log ol{flex-wrap:wrap;white-space:normal;max-height:40vh;overflow-y:auto}
   #cmd{top:auto;bottom:calc(env(safe-area-inset-bottom) + 8px);font-size:15px;max-width:44vw}
 }
+
+/* ===== v1.5: fából, paraszti kivitelű menü (gyalult deszka, kovácsoltvas, kiszögezett pergamen-hirdetmények) ===== */
+:root{
+  --grain:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='480' height='480'><filter id='g'><feTurbulence type='fractalNoise' baseFrequency='0.006 0.22' numOctaves='4' seed='11'/><feColorMatrix values='0 0 0 0 0.16  0 0 0 0 0.08  0 0 0 0 0.02  0 0 0 0.75 -0.1'/></filter><rect width='100%' height='100%' filter='url(%23g)'/></svg>");
+  --paper:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='300' height='300'><filter id='p'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' seed='3'/><feColorMatrix values='0 0 0 0 0.45  0 0 0 0 0.3  0 0 0 0 0.1  0 0 0 0.18 0'/></filter><rect width='100%' height='100%' filter='url(%23p)'/></svg>");
+  --wood-d:#2a1608;
+}
+.screen .panel{position:relative;border:none;border-image:none;border-radius:12px;padding:18px 16px 20px;margin:12px;
+  background:var(--grain),
+    repeating-linear-gradient(180deg,rgba(0,0,0,0) 0 86px,rgba(25,10,2,.55) 86px 88px,rgba(255,215,160,.16) 88px 89px),
+    radial-gradient(ellipse at 50% 0%,rgba(255,200,120,.28),rgba(0,0,0,0) 60%),
+    linear-gradient(90deg,#7a4a24 0%,#9a6436 22%,#86542c 48%,#a06a3a 74%,#7a4824 100%);
+  box-shadow:0 0 0 10px #4a2812,0 0 0 12px #1a0c04,0 0 0 13px rgba(255,210,150,.25),0 24px 60px rgba(0,0,0,.75),inset 0 0 70px rgba(20,8,0,.6),inset 0 2px 0 rgba(255,220,170,.25)}
+.screen .panel::before{content:"";position:absolute;inset:0;pointer-events:none;border-radius:12px;
+  background:
+    radial-gradient(circle at 18px 18px,#d6d0c4 0 2px,#4e4842 3.5px,#1e1a16 5px,transparent 6px),
+    radial-gradient(circle at calc(100% - 18px) 18px,#d6d0c4 0 2px,#4e4842 3.5px,#1e1a16 5px,transparent 6px),
+    linear-gradient(90deg,#2b2622,#5a534c 40%,#2b2622) 0 0/46px 10px no-repeat,
+    linear-gradient(180deg,#2b2622,#5a534c 40%,#2b2622) 0 0/10px 46px no-repeat,
+    linear-gradient(90deg,#2b2622,#5a534c 60%,#2b2622) 100% 0/46px 10px no-repeat,
+    linear-gradient(180deg,#2b2622,#5a534c 40%,#2b2622) 100% 0/10px 46px no-repeat;
+  filter:drop-shadow(0 2px 2px rgba(0,0,0,.6))}
+/* felirat: beégetett, faragott hatás */
+.screen .panel .logo .word,#resTitle .word{color:#f6e3b4;text-shadow:0 -1px 0 rgba(0,0,0,.65),0 2px 0 rgba(40,15,0,.85),0 0 18px rgba(255,190,90,.25)}
+.screen .panel>.sub,.screen .panel>.note,.screen .panel .wait,#lobby .note{color:#f3dfae;text-shadow:0 1px 2px rgba(0,0,0,.8)}
+/* kiszögezett pergamen-hirdetmények */
+.screen .card{position:relative;border:none;border-radius:3px;padding:14px 14px 14px;margin:16px 4px;
+  background:var(--paper),radial-gradient(ellipse at 30% 15%,#fff8df 0,rgba(255,248,223,0) 60%),linear-gradient(180deg,#f3e2b6,#e2c88e);
+  box-shadow:0 1px 0 rgba(255,255,255,.4) inset,inset 0 0 28px rgba(150,95,30,.38),0 7px 14px rgba(0,0,0,.5),0 2px 3px rgba(0,0,0,.4)}
+.screen .card:nth-of-type(odd){transform:rotate(-.5deg)}.screen .card:nth-of-type(even){transform:rotate(.45deg)}
+.screen .card::before,.screen .card::after{content:"";position:absolute;top:7px;width:11px;height:11px;border-radius:50%;
+  background:radial-gradient(circle at 35% 30%,#e8e2d6 0 1.5px,#6a645c 3px,#2a2622 5.5px);box-shadow:0 2px 2px rgba(0,0,0,.55)}
+.screen .card::before{left:8px}.screen .card::after{right:8px}
+.screen .card.foot{background:none;box-shadow:none;transform:none;padding:0}.screen .card.foot::before,.screen .card.foot::after{display:none}
+.screen .card h2,.screen details.card summary{color:#7a1a10;text-shadow:0 1px 0 rgba(255,250,230,.8)}
+/* deszkagombok vasszeggel, beégetett felirattal */
+.screen button.big{color:#fbe9c0;font-weight:700;text-shadow:0 -1px 0 rgba(0,0,0,.7),0 1px 0 rgba(255,220,160,.2);border:2px solid var(--wood-d);outline:none;border-radius:7px;
+  background:var(--grain),linear-gradient(180deg,#a26b38 0%,#8a5528 45%,#6c3f1c 100%);
+  box-shadow:inset 0 2px 0 rgba(255,215,160,.38),inset 0 -3px 0 rgba(0,0,0,.35),0 4px 0 var(--wood-d),0 7px 12px rgba(0,0,0,.45)}
+.screen button.big.alt{color:#2a1608;text-shadow:0 1px 0 rgba(255,240,210,.55);background:var(--grain),linear-gradient(180deg,#c9a878,#a8875a 55%,#8c6c44)}
+.screen button.big::before,.screen button.big::after{width:9px;height:9px;margin-top:-4.5px;transform:none;border:none;border-radius:50%;
+  background:radial-gradient(circle at 35% 30%,#e8e2d6 0 1.2px,#6a645c 2.6px,#1e1a16 4.5px);box-shadow:0 1px 1px rgba(0,0,0,.6)}
+.screen button.big:active{transform:translateY(3px)!important;box-shadow:inset 0 2px 0 rgba(255,215,160,.25),inset 0 -2px 0 rgba(0,0,0,.35),0 1px 0 var(--wood-d),0 2px 5px rgba(0,0,0,.4)}
+@media(hover:hover){.screen button.big:hover{filter:brightness(1.1)}}
+.screen button.big svg.ic{background:radial-gradient(circle,#fbe9c0 0 60%,rgba(251,233,192,0) 72%);border-radius:50%;padding:1px}
+/* fa választók: a kiválasztott sötétre égetve */
+.screen .seg{border:2px solid var(--wood-d);border-radius:7px;overflow:hidden;box-shadow:inset 0 2px 5px rgba(0,0,0,.35),0 1px 0 rgba(255,240,210,.5);
+  background:var(--grain),linear-gradient(180deg,#d8b886,#b8935e)}
+.screen .seg button{background:transparent;color:#2a1608;border-right:1px solid rgba(42,22,8,.55);font-weight:700;text-shadow:0 1px 0 rgba(255,240,210,.5)}
+.screen .seg button.on{background:var(--grain),linear-gradient(180deg,#3a1e0c,#5a3216);color:#fbe9c0;text-shadow:0 -1px 0 #000;box-shadow:inset 0 3px 6px rgba(0,0,0,.6)}
+/* fába vájt pergamen mezők */
+.screen input:not([type=checkbox]),.screen select{background:linear-gradient(180deg,#efe0bc,#f8edd2)!important;border:2px solid #4a2812!important;border-radius:5px!important;
+  box-shadow:inset 0 3px 6px rgba(60,30,5,.35),0 1px 0 rgba(255,245,220,.6)!important;color:#2a1608!important}
+/* festett fakorongok a seregszínhez */
+.screen .swatches button{box-shadow:0 0 0 3px #6e4220,0 0 0 5px var(--wood-d),0 3px 6px rgba(0,0,0,.5),inset 0 -4px 6px rgba(0,0,0,.25),inset 0 3px 4px rgba(255,255,255,.35)}
+.screen .swatches button.on{outline:3px solid #f0c75a;outline-offset:5px}
+.screen .opts label{color:#2a1608}
+.screen .rule{background:radial-gradient(circle,#2a1608 0 2px,transparent 3px) center/16px 10px repeat-x}
+#qrCanvas{outline-color:#2a1608}
+.screen .card{padding-top:22px}
