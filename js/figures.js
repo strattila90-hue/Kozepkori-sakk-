@@ -111,6 +111,12 @@
       ctx.globalAlpha = Math.min(0.95, burn * 1.1); ctx.drawImage(dk, -w / 2, -h, w, h); ctx.restore(); ctx.globalAlpha = 1;
       if (burn < 1) { ctx.globalCompositeOperation = 'lighter'; ctx.globalAlpha = 0.45 * (1 - burn) * (0.7 + 0.3 * Math.sin(t * 25 + e.ph)); ctx.drawImage(silhouette(im, k, '#ff6a10'), -w / 2, -h, w, h); ctx.globalCompositeOperation = 'source-over'; ctx.globalAlpha = 1; }
     }
+    if (e.crack > 0) {   // kőrepedések: a talptól felfelé futó, cikcakkos rések, szürke kőpor-árnyalat
+      ctx.globalAlpha = Math.min(0.55, e.crack * 0.6); ctx.drawImage(silhouette(im, k, '#8a857c'), -w / 2, -h, w, h); ctx.globalAlpha = 1;
+      ctx.strokeStyle = '#1a1612'; ctx.lineWidth = 0.022; ctx.lineJoin = 'miter'; let sd = e.id * 97;
+      const rr = () => { sd = (sd * 16807 + 11) % 2147483647; return sd / 2147483647; };
+      for (let c = 0; c < 4; c++) { let x = (rr() - 0.5) * w * 0.5, y = -h * (0.1 + rr() * 0.2); ctx.beginPath(); ctx.moveTo(x, y); const n = Math.ceil(6 * e.crack); for (let i = 0; i < n; i++) { x += (rr() - 0.5) * w * 0.25; y -= h * 0.12; ctx.lineTo(x, y); } ctx.stroke(); }
+    }
     if (e.hurt > 0.05) { ctx.globalAlpha = Math.min(0.6, e.hurt * 0.55); ctx.drawImage(silhouette(im, k, '#ff2a1a'), -w / 2, -h, w, h); ctx.globalAlpha = 1; }
     ctx.restore();
     return true;

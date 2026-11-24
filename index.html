@@ -32,6 +32,10 @@
     <symbol id="i-jester" viewBox="0 0 32 32"><g stroke="#2b1b10" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"><path d="M5 14L3 4l8 5 5-6 5 6 8-5-2 10z" fill="#b8322a"/><circle cx="3" cy="4" r="2" fill="#d9a935"/><circle cx="16" cy="3" r="2" fill="#d9a935"/><circle cx="29" cy="4" r="2" fill="#d9a935"/><ellipse cx="16" cy="21" rx="8.5" ry="8" fill="#f3dfc3"/><path d="M12 20h.1M20 20h.1M12 25q4 3 8 0" fill="none" stroke-width="2"/></g></symbol>
     <symbol id="i-lute" viewBox="0 0 32 32"><g stroke="#2b1b10" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"><ellipse cx="12" cy="21" rx="8" ry="7.5" transform="rotate(-40 12 21)" fill="#c9923a"/><circle cx="12.5" cy="20.5" r="2.2" fill="#2b1b10"/><path d="M17 15l9-9" stroke-width="3" fill="none"/><path d="M24 4l4 4-2 2-4-4z" fill="#8a5a2b"/><path d="M9 25l11-11M8 23l11-11" stroke-width=".7" fill="none"/></g></symbol>
     <symbol id="i-talk" viewBox="0 0 32 32"><g stroke="#2b1b10" stroke-width="1.6" stroke-linejoin="round" stroke-linecap="round"><path d="M5 7h22v13H15l-6 5v-5H5z" fill="#fffbe6"/><path d="M9 12h14M9 16h9" fill="none"/></g></symbol>
+    <symbol id="i-owl" viewBox="0 0 32 32"><g stroke="#2b1b10" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"><path d="M7 8l4 3h10l4-3v11a9 9 0 0 1-18 0z" fill="#b98a45"/><circle cx="12" cy="15" r="3.5" fill="#fffbe6"/><circle cx="20" cy="15" r="3.5" fill="#fffbe6"/><circle cx="12" cy="15" r="1.4" fill="#2b1b10"/><circle cx="20" cy="15" r="1.4" fill="#2b1b10"/><path d="M15 19l1 2 1-2z" fill="#d9a935"/></g></symbol>
+    <symbol id="i-horn" viewBox="0 0 32 32"><g stroke="#2b1b10" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"><path d="M4 13h5l12-7v20l-12-7H4z" fill="#d9a935"/><path d="M24 11q3 5 0 10M27 8q5 8 0 16" fill="none"/><path d="M8 19l2 7h3l-1-7" fill="#8a5a2b"/></g></symbol>
+    <symbol id="i-book" viewBox="0 0 32 32"><g stroke="#2b1b10" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"><path d="M5 6q6-2 11 1v20q-5-3-11-1z" fill="#efe3c0"/><path d="M27 6q-6-2-11 1v20q5-3 11-1z" fill="#e2c98a"/><path d="M8 11h5M8 15h5M19 11h5M19 15h5" fill="none"/></g></symbol>
+    <symbol id="i-dots" viewBox="0 0 32 32"><g stroke="#2b1b10" stroke-width="1.5"><circle cx="8" cy="16" r="3" fill="#b8322a"/><circle cx="16" cy="16" r="3" fill="#d9a935"/><circle cx="24" cy="16" r="3" fill="#3b5ea6"/></g></symbol>
     <symbol id="i-kings" viewBox="0 0 32 32"><g stroke="#2b1b10" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"><path d="M3 12l3-6 3 4 3-5 3 7z" fill="#d9a935"/><path d="M17 12l3-6 3 4 3-5 3 7z" fill="#d9a935" transform="translate(-1 6)"/><path d="M5 12h10v12H5zM16 18h11v10H16z" fill="#efe3c0" opacity=".0"/></g></symbol>
   </defs>
 </svg>
@@ -42,55 +46,81 @@
 <div id="hud" class="hidden">
   <div class="plate top" id="oppPlate"><span class="sw" id="oppSw"></span><b id="oppName">Ellenfél</b><i id="oppStat"></i></div>
   <div id="turnBadge" role="status" aria-live="polite"></div>
+  <div id="cmd" aria-live="polite"></div>
   <div id="hint" role="status" aria-live="polite"></div>
+  <aside id="log" class="hidden" aria-label="Krónika: a lépések listája"><h3>Krónika</h3><ol id="logList"></ol></aside>
   <div class="bottom">
     <div class="plate" id="mePlate"><span class="sw" id="meSw"></span><b id="meName">Te</b><i id="meStat"></i></div>
-    <div class="btns">
-      <button id="bFart"><svg><use href="#i-fart"/></svg><small>Pukk</small></button>
-      <button id="bNose"><svg><use href="#i-nose"/></svg><small>Orrfúj</small></button>
-      <button id="bDraw"><svg><use href="#i-scales"/></svg><small>Béke</small></button>
-      <button id="bResign"><svg><use href="#i-flag"/></svg><small>Megadom</small></button>
-      <button id="bZoom"><svg><use href="#i-lens"/></svg><small>Nagyít</small></button>
-      <button id="bUndo"><svg><use href="#i-undo"/></svg><small>Vissza</small></button>
-      <button id="bFlip"><svg><use href="#i-flip"/></svg><small>Fordít</small></button>
-      <button id="bMute"><svg><use href="#i-bell"/></svg><small>Harang</small></button>
-      <button id="bMusic"><svg><use href="#i-lute"/></svg><small>Lant</small></button>
-      <button id="bTalk"><svg><use href="#i-talk"/></svg><small>Szó: kevés</small></button>
-      <button id="bMenu"><svg><use href="#i-scroll"/></svg><small>Tekercs</small></button>
-    </div>
+    <nav class="bar" aria-label="Parancsok">
+      <div class="btns main">
+        <button id="bHint" title="A tanácsos súg egy jó lépést"><svg><use href="#i-owl"/></svg><small>Tanács</small></button>
+        <button id="bVoice" title="Mondd ki a lépést (pl. huszár f3)"><svg><use href="#i-horn"/></svg><small>Vezényelj</small></button>
+        <button id="bUndo"><svg><use href="#i-undo"/></svg><small>Vissza</small></button>
+        <button id="bZoom"><svg><use href="#i-lens"/></svg><small>Nagyít</small></button>
+        <button id="bLog"><svg><use href="#i-book"/></svg><small>Krónika</small></button>
+        <button id="bMore" aria-expanded="false"><svg><use href="#i-dots"/></svg><small>Több</small></button>
+      </div>
+      <div class="btns more" id="moreBtns">
+        <button id="bFart"><svg><use href="#i-fart"/></svg><small>Pukk</small></button>
+        <button id="bNose"><svg><use href="#i-nose"/></svg><small>Orrfúj</small></button>
+        <button id="bDraw"><svg><use href="#i-scales"/></svg><small>Béke</small></button>
+        <button id="bResign"><svg><use href="#i-flag"/></svg><small>Megadom</small></button>
+        <button id="bFlip"><svg><use href="#i-flip"/></svg><small>Fordít</small></button>
+        <button id="bMute"><svg><use href="#i-bell"/></svg><small>Harang</small></button>
+        <button id="bMusic"><svg><use href="#i-lute"/></svg><small>Lant</small></button>
+        <button id="bTalk"><svg><use href="#i-talk"/></svg><small>Szó: kevés</small></button>
+        <button id="bMenu"><svg><use href="#i-scroll"/></svg><small>Várba</small></button>
+      </div>
+    </nav>
   </div>
 </div>
-
 <div id="menu" class="screen">
   <div class="panel">
     <div class="logo"><span class="drop">P</span><span class="word">arasztsakk</span></div>
-    <div class="sub">Vérrel, büdösséggel, szabályosan</div>
-    <div class="rule"></div>
-    <label>Nevezd meg magad, jobbágy<input id="name" maxlength="14" autocomplete="off" placeholder="Pocak Pista"></label>
-    <div class="row-label">Seregednek zászlaja</div>
-    <div class="swatches" id="swatches"></div>
-    <div class="row-label">Ki kezd? (a szobanyitónak)</div>
-    <div class="seg" id="sideSeg"><button data-v="w" class="on">Világos</button><button data-v="r">Sorsolás</button><button data-v="b">Sötét</button></div>
-    <button class="big" id="btnCreate"><svg class="ic"><use href="#i-sword"/></svg>Hívd ki ellenfeledet</button>
-    <div class="join"><input id="code" maxlength="5" placeholder="KÓD" autocomplete="off"><button class="big" id="btnJoin"><svg class="ic"><use href="#i-key"/></svg>Lépj a várba</button></div>
-    <button id="btnResume" class="big alt hidden"></button>
-    <div id="onlineNote" class="note hidden"></div>
-    <div class="rule"></div>
-    <div class="row-label">Bolond ellen: kinek a seregével?</div>
-    <div class="seg" id="botSideSeg"><button data-v="w" class="on">Világos</button><button data-v="r">Sorsolás</button><button data-v="b">Sötét</button></div>
-    <div class="join"><select id="botLevel"><option value="1">Részeg jobbágy</option><option value="2" selected>Falusi bíró</option><option value="3">Hadúr</option></select><button class="big" id="btnBot"><svg class="ic"><use href="#i-jester"/></svg>Viadal a bolonddal</button></div>
-    <button class="big" id="btnLocal"><svg class="ic"><use href="#i-kings"/></svg>Két úr egy asztalnál</button>
-    <div class="row-label">Grafika (gyengébb telefonhoz)</div>
-    <div class="seg" id="perfSeg"><button data-v="auto" class="on">Magától</button><button data-v="low">Kíméletes</button><button data-v="high">Pazar</button></div>
-    <div class="row-label">Beszólások (szövegbuborékok)</div>
-    <div class="seg" id="talkSeg"><button data-v="many">Sok</button><button data-v="few" class="on">Kevés</button><button data-v="off">Csend</button></div>
-    <div class="opts"><label><input type="checkbox" id="optFast"> Sietős mészárlás (gyors mozgás)</label><label><input type="checkbox" id="optMusic" checked> Lantos zene (középkori dallamok)</label><label><input type="checkbox" id="optAutoUpd" checked> Automatikus frissítés (új kiadás magától betöltődik, csata közben soha)</label></div>
-    <div class="rule"></div>
-    <button class="big" id="btnShareGame"><svg class="ic"><use href="#i-share"/></svg>Hírnököt küldök a barátaimnak</button>
-    <button class="big alt hidden" id="btnInstall">Vidd haza a várat (telepítés)</button>
-    <div id="iosNote" class="note hidden">Telefonon: koppints a <b>Megosztás</b> gombra, majd <b>„Főképernyőhöz adás"</b>. Így egy kattintással indul, és hálózat nélkül is megy a bolond elleni viadal.</div>
-    <button class="big alt" id="btnUpdate">Hírnököt küldök: van-e új kiadás?</button>
-    <div id="verLine" class="note"></div>
+    <div class="sub">Élő bábuk, vér, kőpor – szabályosan</div>
+    <section class="card">
+      <label>Nevezd meg magad, jobbágy<input id="name" maxlength="14" autocomplete="off" placeholder="Pocak Pista"></label>
+      <div class="row-label">Seregednek zászlaja</div>
+      <div class="swatches" id="swatches"></div>
+    </section>
+    <section class="card">
+      <h2><svg class="ic"><use href="#i-jester"/></svg>Viadal a bolonddal</h2>
+      <div class="row-label">Kinek a seregével?</div>
+      <div class="seg" id="botSideSeg"><button data-v="w" class="on">Világos</button><button data-v="r">Sorsolás</button><button data-v="b">Sötét</button></div>
+      <div class="join"><select id="botLevel" aria-label="A bolond ereje"><option value="1">Részeg jobbágy</option><option value="2" selected>Falusi bíró</option><option value="3">Hadúr</option></select><button class="big" id="btnBot">Csatába!</button></div>
+      <button class="big alt" id="btnLocal"><svg class="ic"><use href="#i-kings"/></svg>Két úr egy asztalnál</button>
+    </section>
+    <section class="card">
+      <h2><svg class="ic"><use href="#i-sword"/></svg>Online viadal</h2>
+      <div class="row-label">Ki kezd? (a szobanyitónak)</div>
+      <div class="seg" id="sideSeg"><button data-v="w" class="on">Világos</button><button data-v="r">Sorsolás</button><button data-v="b">Sötét</button></div>
+      <button class="big" id="btnCreate">Hívd ki ellenfeledet</button>
+      <div class="join"><input id="code" maxlength="5" placeholder="KÓD" autocomplete="off" aria-label="Szobakód"><button class="big" id="btnJoin"><svg class="ic"><use href="#i-key"/></svg>Lépj a várba</button></div>
+      <button id="btnResume" class="big alt hidden"></button>
+      <div id="onlineNote" class="note hidden"></div>
+    </section>
+    <details class="card" id="setCard">
+      <summary>Beállítások</summary>
+      <div class="row-label">Halálnem</div>
+      <div class="seg" id="deathSeg"><button data-v="blood">Véres</button><button data-v="mixed" class="on">Vegyes</button><button data-v="stone">Élő kő</button></div>
+      <div class="row-label">Beszólások (szövegbuborékok)</div>
+      <div class="seg" id="talkSeg"><button data-v="many">Sok</button><button data-v="few" class="on">Kevés</button><button data-v="off">Csend</button></div>
+      <div class="row-label">Grafika (gyengébb telefonhoz)</div>
+      <div class="seg" id="perfSeg"><button data-v="auto" class="on">Magától</button><button data-v="low">Kíméletes</button><button data-v="high">Pazar</button></div>
+      <div class="opts">
+        <label><input type="checkbox" id="optVoice" checked> Vezényszó: a hadvezér felolvassa a parancsot</label>
+        <label><input type="checkbox" id="optFast"> Sietős mészárlás (gyors mozgás)</label>
+        <label><input type="checkbox" id="optMusic" checked> Lantos zene (középkori dallamok)</label>
+        <label><input type="checkbox" id="optAutoUpd" checked> Automatikus frissítés (csata közben soha)</label>
+      </div>
+    </details>
+    <section class="card foot">
+      <button class="big alt" id="btnShareGame"><svg class="ic"><use href="#i-share"/></svg>Hírnököt küldök a barátaimnak</button>
+      <button class="big alt hidden" id="btnInstall">Vidd haza a várat (telepítés)</button>
+      <div id="iosNote" class="note hidden">Telefonon: koppints a <b>Megosztás</b> gombra, majd <b>„Főképernyőhöz adás"</b>. Így egy kattintással indul, és hálózat nélkül is megy a bolond elleni viadal.</div>
+      <button class="big alt" id="btnUpdate">Hírnököt küldök: van-e új kiadás?</button>
+      <div id="verLine" class="note"></div>
+    </section>
   </div>
 </div>
 
@@ -128,6 +158,7 @@
 <script src="js/lines.js"></script>
 <script src="js/scenes.js"></script>
 <script src="js/fx.js"></script>
+<script src="js/commands.js"></script>
 <script src="js/qrcode.js"></script>
 <script src="js/net.js"></script>
 <script src="js/main.js"></script>

@@ -113,7 +113,7 @@ let pass = 0, fail = 0; const ok = (n, c, info) => { c ? pass++ : fail++; consol
     ok('„Csend" mellett nincs buborék', bb.off, bb);
     ok('„Kevés" mellett nincs háttér-fecsegés, de a harci beszólás látszik', bb.fewIdle && bb.fewFight, bb);
     ok('egyszerre legfeljebb 3 buborék (legfeljebb 2 sor mindegyikben)', bb.drawnLines > 0 && bb.drawnLines <= 6, bb);
-    await P.click('#bTalk'); ok('a Szó gomb lépteti a beállítást', /Szó: /.test(await P.textContent('#bTalk small')));
+    await P.click('#bMore'); await P.click('#bTalk'); ok('a Szó gomb lépteti a beállítást', /Szó: /.test(await P.textContent('#bTalk small')));
     await P.click('#bMusic'); const mus = await P.evaluate(() => SFX.musicOn()); await P.click('#bMusic');
     ok('a Lant gomb ki-be kapcsolja a zenét', mus === false && (await P.evaluate(() => SFX.musicOn())) === true);
     await c4.close();
@@ -135,11 +135,28 @@ let pass = 0, fail = 0; const ok = (n, c, info) => { c ? pass++ : fail++; consol
     await B2.click('#btnLocal'); await B2.waitForTimeout(600); srvVer = '9.9.9';
     await B2.evaluate(() => window.__checkUpdate(false)); await B2.waitForTimeout(2200);
     ok('csata közben nem frissít, csak jelzi', (await B2.evaluate(() => window.__applied)) === 0 && !!(await B2.$('#updBanner')));
-    await B2.click('#bMenu'); await B2.waitForTimeout(2200);
+    await B2.click('#bMore'); await B2.click('#bMenu'); await B2.waitForTimeout(2200);
     ok('a csata után (menübe lépve) magától betölti', (await B2.evaluate(() => window.__applied)) === 1);
     await B2.evaluate(() => window.__checkUpdate(false)); await B2.waitForTimeout(2200);
     ok('hurokvédelem: ugyanarra a verzióra nem tölt újra azonnal', (await B2.evaluate(() => window.__applied)) === 1);
     await c5.close(); await c6.close();
+  }
+  console.log('Élő kő, vezényszó, tanács, krónika');
+  {
+    const c7 = await b.newContext({ viewport: { width: 430, height: 900 } }); const P = await mk(c7);
+    await P.click('#setCard summary'); await P.click('#deathSeg button[data-v=stone]'); await P.click('#btnLocal'); await P.waitForTimeout(800);
+    await P.evaluate(() => { W.idleOn = false; W.speed = 6; }); await P.click('#bLog');
+    for (const x of ['e2 e4', 'd7 d5', 'e4 d5']) { await P.evaluate(x => window.__voiceMove(x), x); await P.waitForTimeout(150); await idle(P); }
+    const r = await P.evaluate(() => ({ n: __G.chess.moveList.join(','), log: document.getElementById('logList').textContent, cmd: document.getElementById('cmd').textContent, bodies: W.bodies.length, pcs: W.pieces.length }));
+    ok('hangparancs lépései végrehajtva', r.n === 'e2e4,d7d5,e4d5', r);
+    ok('élő kő: a leütött bábu kőtörmelékké omlik (nincs hulla)', r.pcs === 31 && r.bodies === 0, r);
+    ok('krónika: magyar jelölés', /e4/.test(r.log) && /exd5/.test(r.log), r);
+    ok('vezényszó-szalag kiírja a parancsot', /üsd le a gyalogot/.test(r.cmd), r);
+    await P.click('#bHint'); await P.waitForTimeout(600);
+    const h = await P.evaluate(() => ({ hint: W.hl.hint, sel: __G.sel }));
+    ok('tanács: nyíl és kijelölt bábu', !!h.hint && h.sel === h.hint.from, h);
+    await P.click('#bMore'); ok('„Több” fiók kinyílik', await P.evaluate(() => document.getElementById('hud').classList.contains('moreOpen') && getComputedStyle(document.getElementById('moreBtns')).display !== 'none'));
+    await c7.close();
   }
   ok('nincs oldal-hiba a teszt során', errs.length === 0, errs.slice(0, 3));
   await b.close(); srv.close(); console.log(`\nFüsttesztek: ${pass} sikeres, ${fail} hibás`); process.exit(fail ? 1 : 0);

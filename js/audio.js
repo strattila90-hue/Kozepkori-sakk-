@@ -243,6 +243,13 @@
     oink() {
       if (!ok()) return; const t = now(); osc('sawtooth', 150, 90, t, 0.18, 0.25); osc('sawtooth', 130, 80, t + 0.2, 0.2, 0.25);
     },
+    crack() { // kő reped
+      if (!ok()) return; const t = now(); for (let i = 0; i < 5; i++) noise(t + i * 0.06 + Math.random() * 0.03, 0.03, 0.25, 'highpass', 2500 + Math.random() * 2000, 2);
+    },
+    shatter() { // kő szétrobban
+      if (!ok()) return; const t = now(); noise(t, 0.5, 0.6, 'lowpass', 1800, 1); osc('sine', 90, 35, t, 0.4, 0.6);
+      for (let i = 0; i < 14; i++) { const d = 0.05 + Math.random() * 0.7; noise(t + d, 0.03, 0.12 + Math.random() * 0.15, 'bandpass', 1500 + Math.random() * 3000, 3); }
+    },
     flap() { // szárnycsapás
       if (!ok()) return; const t = now(); const f = noise(t, 0.35, 0.35, 'lowpass', 260, 1.5); f.frequency.exponentialRampToValueAtTime(700, t + 0.12); f.frequency.exponentialRampToValueAtTime(180, t + 0.33); osc('sine', 70, 40, t, 0.25, 0.25);
     },

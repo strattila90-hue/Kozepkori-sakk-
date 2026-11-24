@@ -32,7 +32,7 @@
       for (let r = 0; r < n; r++) for (let c = 0; c < n; c++) if (qr.isDark(r, c)) g.fillRect(off + c * px, off + r * px, px, px);
     } catch (e) { console.warn('QR', e); }
   }
-  const APP_V = '1.0.1'; let deferredInstall = null, swReg = null, newWorker = null;
+  const APP_V = '1.1.0'; let deferredInstall = null, swReg = null, newWorker = null;
   const isStandalone = () => window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone;
   function showUpdateBanner(txt) {
     if ($('updBanner')) return; const d = document.createElement('div'); d.id = 'updBanner'; d.innerHTML = '<span></span><button>Betöltöm!</button>'; d.firstChild.textContent = txt; d.lastChild.onclick = applyUpdate; document.body.appendChild(d);
@@ -112,6 +112,9 @@
     $('btnBot').onclick = () => startBot(+$('botLevel').value); $('btnLocal').onclick = startLocal;
     $('perfSeg').querySelectorAll('button').forEach(b => { b.classList.toggle('on', b.dataset.v === W.perfMode); b.onclick = () => { W.setPerf(b.dataset.v); $('perfSeg').querySelectorAll('button').forEach(x => x.classList.toggle('on', x === b)); }; });
     $('optFast').onchange = e => { W.speed = e.target.checked ? 1.7 : 1; };
+    W.deathStyle = store.get('ps_death') || 'mixed';
+    $('deathSeg').querySelectorAll('button').forEach(b => { b.classList.toggle('on', b.dataset.v === W.deathStyle); b.onclick = () => { W.deathStyle = b.dataset.v; store.set('ps_death', b.dataset.v); $('deathSeg').querySelectorAll('button').forEach(x => x.classList.toggle('on', x === b)); }; });
+    $('optVoice').checked = store.get('ps_voice') !== '0'; $('optVoice').onchange = e => { store.set('ps_voice', e.target.checked ? '1' : '0'); if (e.target.checked && !Cmd.speak('Igenis, uram!')) UI.toast('Ezen a készüléken nincs magyar felolvasó hang – a parancs felirat marad.'); };
     $('optMusic').checked = SFX.musicOn(); $('optMusic').onchange = e => { SFX.init(); SFX.setMusic(e.target.checked); paintMusic(); };
     $('talkSeg').querySelectorAll('button').forEach(b => { b.onclick = () => { W.setTalk(b.dataset.v); paintTalk(); }; });
     paintTalk(); paintMusic();
@@ -147,7 +150,7 @@
     G.chess = new Chess(); G.over = false; G.warnedBad = false;
     W.setFlip(opts.mySide === 'b');
     W.setThemes({ w: S.THEMES[opts.themeIds.w], b: S.THEMES[opts.themeIds.b] });
-    W.setup(G.chess); W.idleOn = true; W.idleT = 2;
+    W.setup(G.chess); W.idleOn = true; W.idleT = 2; logMove();
     const bottom = opts.mySide || 'w', top = bottom === 'w' ? 'b' : 'w';
     $('meName').textContent = opts.names[bottom]; $('oppName').textContent = opts.names[top];
     $('meSw').style.background = S.THEMES[opts.themeIds[bottom]].hex; $('oppSw').style.background = S.THEMES[opts.themeIds[top]].hex;
@@ -255,6 +258,7 @@
         .then(ok => { if (!ok) recoverFromServer('Az ellenfél közben lépett, az állás összeigazítva'); })      // a szerver elutasította: ne maradjon eltérő állás
         .catch(e => { console.error(e); recoverFromServer('A lépést nem sikerült elküldeni, az állás összeigazítva'); });
     }
+    W.hl.hint = null; announce(m); logMove();
     updateHud(); $('hint').textContent = 'Koppints a képre: gyorsabb a mészárlás!';
     try { await W.playMove(m); } catch (e) { console.error('animáció hiba', e); W.busy = false; W.setup(G.chess); }   // az állás akkor is előrelép, ha egy animáció elbukik
     W.skip = false;
@@ -379,6 +383,10 @@
     c.addEventListener('pointerup', up); c.addEventListener('pointercancel', up);
     c.addEventListener('wheel', e => { e.preventDefault(); const p = pos(e); W.zoomAt(e.deltaY < 0 ? 1.15 : 1 / 1.15, p.x, p.y); }, { passive: false });
     $('bZoom').onclick = () => W.cycleZoom();
+    $('bMore').onclick = () => { const open = !$('hud').classList.contains('moreOpen'); $('hud').classList.toggle('moreOpen', open); $('bMore').setAttribute('aria-expanded', open); };
+    $('bLog').onclick = () => { $('log').classList.toggle('hidden'); $('bLog').classList.toggle('on', !$('log').classList.contains('hidden')); logMove(); };
+    $('bHint').onclick = hint;
+    if (!Cmd.canListen) $('bVoice').classList.add('hidden'); $('bVoice').onclick = voice;
     $('bFart').onclick = () => emote('fart'); $('bNose').onclick = () => emote('nose');
     $('bUndo').onclick = takeback; $('bFlip').onclick = () => { W.setFlip(!W.flip); };
     $('bMute').onclick = () => { SFX.setMuted(!SFX.isMuted()); $('bMute').classList.toggle('off', SFX.isMuted()); };
@@ -398,12 +406,54 @@
       } catch (e) { UI.toast('Hiba', 'bad'); }
     };
   }
+  /* ---------- Vezényszó, tanács, hangparancs, krónika ---------- */
+  let cmdTimer = null;
+  function announce(m) {
+    const txt = Cmd.command(m), el = $('cmd'); el.textContent = txt; el.className = 'show'; clearTimeout(cmdTimer); cmdTimer = setTimeout(() => { el.className = ''; }, 2400);
+    if (store.get('ps_voice') !== '0') Cmd.speak(txt);
+    const e = W.pieceAt(m.from); if (e && W.talk === 'many') W.sayIdle(e, ['Igenis, uram!', 'Ahogy parancsolod!', 'Megyek már, megyek!', 'Hát ha muszáj…'][Math.floor(Math.random() * 4)], 1.1);
+  }
+  function logMove() {
+    if (!G.chess || $('log').classList.contains('hidden')) return;
+    const g = new Chess(), list = $('logList'); list.textContent = ''; let li = null;
+    G.chess.moveList.forEach((u, i) => {
+      const m = g.move({ from: u.slice(0, 2), to: u.slice(2, 4), promo: u[4] || null }); if (!m) return;
+      if (i % 2 === 0) { li = document.createElement('li'); list.appendChild(li); }
+      const sp = document.createElement('span'); sp.textContent = Cmd.note(m); sp.className = m.color; li.appendChild(sp);
+    });
+    list.scrollLeft = list.scrollWidth;
+  }
+  function hint() {
+    if (!canAct()) { UI.toast('Most nem a te köröd, uram.'); return; }
+    const b = $('bHint'); b.classList.add('busy');
+    setTimeout(() => {
+      const m = Chess.bestMove(G.chess, 2); b.classList.remove('busy'); if (!m || !canAct()) return;
+      W.hl.hint = { from: m.from, to: m.to }; select(m.from);
+      const sim = G.chess.clone(); sim.make(m); m.check = sim.inCheck(); const txt = 'A tanácsos súgja: ' + Cmd.command(m);
+      $('cmd').textContent = txt; $('cmd').className = 'show hintc'; clearTimeout(cmdTimer); cmdTimer = setTimeout(() => { $('cmd').className = ''; }, 3200);
+    }, 30);
+  }
+  let rec = null;
+  function voice() {
+    if (rec) { try { rec.stop(); } catch (e) { /* */ } return; }
+    if (!canAct()) { UI.toast('Várd ki a sorod, uram!'); return; }
+    const b = $('bVoice'); b.classList.add('listening'); $('hint').textContent = 'Mondd a parancsot: „huszár f3”, „e2 e4”, „rövid sánc”…';
+    rec = Cmd.listen(r => {
+      rec = null; b.classList.remove('listening'); updateHud();
+      if (r.error) { UI.toast(r.error, 'bad'); return; }
+      let last = null;
+      for (const a of r.alts) { const p = Cmd.parseVoice(a, G.chess); if (p.move) { if (!canAct()) return; applyMove(p.move, true); return; } last = last || p.error; }
+      UI.toast((last || 'Nem értem, uram.') + ' (hallottam: „' + r.alts[0] + '”)', 'bad');
+    });
+    if (!rec) b.classList.remove('listening');
+  }
+  window.__voiceMove = t => { const p = Cmd.parseVoice(t, G.chess); if (p.move && canAct()) applyMove(p.move, true); return p; };   // teszthez
   function takeback() {
     if (!G.mode || G.mode === 'online' || W.busy || G.pumping || G.over) { UI.toast(G.mode === 'online' ? 'Online nincs visszalépés, uram.' : 'Várj, amíg véget ér a mészárlás!'); return; }
     const list = G.chess.moveList.slice(); if (!list.length) return;
     const drop = (G.mode === 'bot' && G.chess.turn === G.mySide) ? 2 : 1, keep = list.slice(0, Math.max(0, list.length - drop));
     G.gen++; G.queue = []; const g = new Chess(); for (const u of keep) g.move({ from: u.slice(0, 2), to: u.slice(2, 4), promo: u[4] || null });
-    G.chess = g; G.sel = -1; W.hl.arrow = null; W.hl.last = [-1, -1]; W.setup(g); updateHud(); UI.toast('Az idő kereke visszaforog…'); SFX.bell();
+    G.chess = g; G.sel = -1; W.hl.arrow = null; W.hl.hint = null; W.hl.last = [-1, -1]; W.setup(g); logMove(); updateHud(); UI.toast('Az idő kereke visszaforog…'); SFX.bell();
     if (G.mode === 'bot' && g.turn !== G.mySide) setTimeout(botMove, 600);
   }
   let lastEm = 0;

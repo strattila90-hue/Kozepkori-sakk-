@@ -109,6 +109,14 @@
       for (let i = 0; i < 6; i++) W.decal(v.x + rnd(-0.6, 0.6), v.z + rnd(-0.6, 0.6), rnd(0.15, 0.4));
       v.alpha = 0; v.state = 'dead'; W.shake = 0.8; SFX.scream();
       await wait(0.5);
+    } else if (kind === 'shatter') {   // élő kőbábu: megreped, majd kőtörmelékké omlik
+      SFX.crack(); v.hurt = 0; await tw(v, { crack: 1 }, 0.4, ease.lin); W.hitstop = 0.08; SFX.shatter();
+      const stone = ['#9a958c', '#7f7a72', '#b7b1a6', '#6a655e'], cols = stone.concat([v.theme.main, v.theme.main, v.theme.dark]);
+      for (let i = 0; i < 26; i++) W.part({ kind: 'gib', rock: true, sides: 4 + (i % 3), x: v.x + rnd(-0.2, 0.2), y: rnd(0.15, S.HEIGHT[v.type] * 0.9), z: v.z + rnd(-0.15, 0.15), vx: (ux || 0) * rnd(0.5, 2.5) + rnd(-2.2, 2.2), vy: rnd(1.5, 5), vz: (uz || 0) * rnd(0.5, 2.5) + rnd(-1.6, 1.6), vr: rnd(-12, 12), g: 12, size: rnd(0.04, 0.11), color: pick(cols), life: rnd(4, 7) });
+      for (let i = 0; i < 12; i++) W.part({ kind: 'smoke', x: v.x + rnd(-0.3, 0.3), y: rnd(0.1, 1.1), z: v.z + rnd(-0.2, 0.2), vx: rnd(-0.8, 0.8), vy: rnd(0.2, 0.9), vz: rnd(-0.5, 0.5), g: -0.1, drag: 1.2, size: rnd(0.2, 0.4), color: pick(['#c9c2b2', '#a8a294', '#d8d2c4']), life: rnd(1.2, 2.2) });
+      for (let i = 0; i < 4; i++) W.decal(v.x + rnd(-0.4, 0.4), v.z + rnd(-0.4, 0.4), rnd(0.12, 0.28), 'rgba(110,104,96,.45)');
+      v.alpha = 0; v.state = 'dead'; W.shake = Math.max(W.shake, 0.7); SFX.thud();
+      await wait(0.45);
     } else if (kind === 'launch') {
       SFX.scream(); SFX.whoosh();
       const edge = edgeFor(v.x, v.z, ux, uz), sx = v.x, sz = v.z, spin = rnd(8, 14) * dirSign;
@@ -190,13 +198,13 @@
       if (Math.random() < 0.65) await strike(v, att, -ux, -uz, { blood: false });
     }
     await strike(att, v, ux, uz, { blood: true, lethal: true });
-    const kind = pick(['decap', 'decap', 'stab', 'launch', 'gibs', 'topple']);
+    const style = W.deathStyle || 'mixed', kind = style === 'stone' ? 'shatter' : pick(style === 'blood' ? ['decap', 'decap', 'stab', 'launch', 'gibs', 'topple'] : ['decap', 'stab', 'launch', 'gibs', 'topple', 'shatter', 'shatter']);
     const dirS = scrDir(att, v);
     await die(v, kind, dirS, ux, uz);
     W.unfocus();
     // az áldozat kikerül a játékból, a támadó beáll a helyére
     W.pieces.splice(W.pieces.indexOf(v), 1);
-    if (kind !== 'gibs') {
+    if (kind !== 'gibs' && kind !== 'shatter') {
       W.bodies.push(v);
       const jobs = [hop(att, to.x, to.z, 0.35, 0.3, 1)];
       if (kind !== 'launch') {
@@ -207,9 +215,15 @@
       scavenge(v);
     } else {
       await hop(att, to.x, to.z, 0.35, 0.3, 1);
-      const pile = { kind: 'pile', x: v.x, z: v.z, y: 0, face: 1, alpha: 1, sh: 0.4, draw: (c, a, t) => { S.ell(c, 0, -0.04, 0.35, 0.1, '#8a0a0a', 0, 0.02); S.ell(c, -0.1, -0.1, 0.12, 0.08, v.theme.main, 0.3, 0.03); S.ell(c, 0.12, -0.08, 0.08, 0.06, v.skin, 0, 0.03); c.fillStyle = '#efe9d8'; c.fillRect(0.0, -0.16, 0.2, 0.05); } };
-      W.actors.push(pile);
-      setTimeout(() => scavengePile(pile), 600);
+      if (kind === 'shatter') {   // kőhalom: a győztes félresöpri, majd elporlik
+        const rocks = Array.from({ length: 9 }, (_, i) => [rnd(-0.3, 0.3), -rnd(0.02, 0.14), rnd(0.05, 0.11), pick(['#9a958c', '#7f7a72', '#b7b1a6', v.theme.main]), i]);
+        const pile = { kind: 'rubble', x: v.x, z: v.z, y: 0, face: 1, alpha: 1, sh: 0.35, draw: (c) => { for (const [x, y, r, col] of rocks) S.poly(c, [[x - r, y], [x - r * 0.4, y - r * 0.9], [x + r * 0.6, y - r * 0.7], [x + r, y + r * 0.1], [x, y + r * 0.4]], col, 0.012); } };
+        W.actors.push(pile); setTimeout(() => { tw(pile, { alpha: 0 }, 2.5).then(() => { const i = W.actors.indexOf(pile); if (i >= 0) W.actors.splice(i, 1); }); }, 2500);
+      } else {
+        const pile = { kind: 'pile', x: v.x, z: v.z, y: 0, face: 1, alpha: 1, sh: 0.4, draw: (c, a, t) => { S.ell(c, 0, -0.04, 0.35, 0.1, '#8a0a0a', 0, 0.02); S.ell(c, -0.1, -0.1, 0.12, 0.08, v.theme.main, 0.3, 0.03); S.ell(c, 0.12, -0.08, 0.08, 0.06, v.skin, 0, 0.03); c.fillStyle = '#efe9d8'; c.fillRect(0.0, -0.16, 0.2, 0.05); } };
+        W.actors.push(pile);
+        setTimeout(() => scavengePile(pile), 600);
+      }
     }
     W.setCheer(2.5); SFX.cheer(); W.crowdSay(L.pick('crowd'));
   }
