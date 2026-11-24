@@ -1,5 +1,5 @@
 /* Szolgáltató-munkás: offline játék + frissítés. A CACHE neve a verzióval együtt változik. */
-const VERSION = '0.9.3', CACHE = 'parasztsakk-' + VERSION;
+const VERSION = '0.9.4', CACHE = 'parasztsakk-' + VERSION;
 const CORE = ['./', 'index.html', 'style.css', 'manifest.webmanifest', 'firebase-config.js', 'js/chess.js', 'js/audio.js', 'js/sprites.js', 'js/figures.js', 'js/world.js', 'js/lines.js', 'js/fx.js', 'js/net.js', 'js/qrcode.js', 'js/scenes.js', 'js/main.js',
   'icons/icon-192.png', 'icons/icon-512.png', 'icons/apple-touch-icon.png', 'assets/figs/meta.json'];
 self.addEventListener('install', e => { e.waitUntil(caches.open(CACHE).then(c => c.addAll(CORE)).then(() => self.skipWaiting())); });
