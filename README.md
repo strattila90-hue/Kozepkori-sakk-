@@ -22,6 +22,12 @@ Fehér · Fekete · Vörös · Arany (mindenki a sajátját választja; azonos v
 - A győztes királyát megkoronázzák; a vesztes seregét **sárkány** elégeti, **hóhér** lefejezi, vagy egymást **nyakon szúrják**.
 - Döntetlennél a **Fekete Halál** visz el mindenkit.
 
+## v1.2.0 – Holdfényes Udvar
+- **Napszakok:** nappal (napsugár-nyalábok), alkony (meleg narancsfény), éjszaka (holdfényes tábla, erős fáklyafény, csillagok, szentjánosbogarak). Alapból a készülék órája szerint; a Beállításokban rögzíthető.
+- **Tükröződő tábla:** a lakkozott fán a bábuk halvány tükörképe látszik (Pazar/Magától minőségnél).
+- **Kontúrfény:** meleg fényszegély a bábukon, élesebben válnak el a háttértől.
+- **Árnyalt kockakövek** az udvaron a lapos foltok helyett.
+
 ## v1.1.0 – Élő kő
 - **Élő kőbábuk:** ütéskor a bábu megreped, majd kőtörmelékké omlik (porfelhő, guruló kövek, kőhalom). Beállítás: *Véres* / *Vegyes* / *Élő kő*.
 - **Vezényszó:** minden lépésnél a hadvezér kimondja a parancsot („Huszár, f3-ra!”, „Gyalog, d5-re, üsd le a gyalogot!”) – felirat-szalagon, és ha a készüléken van magyar felolvasó hang, hangosan is. A bábu engedelmeskedik („Igenis, uram!”).

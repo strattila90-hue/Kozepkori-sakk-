@@ -347,8 +347,10 @@
     for (const s of stones) {
       const p = W.P(s.x, 0, s.z); if (p.x < -50 || p.x > w + 50 || p.y > h + 20) continue;
       const inYard = Math.abs(s.x) < 6.4 && Math.abs(s.z) < 6.4;
-      ctx.fillStyle = inYard ? s.c : '#9a9a8a'; ctx.strokeStyle = 'rgba(43,27,16,.5)'; ctx.lineWidth = 1;
-      ctx.beginPath(); ctx.ellipse(p.x, p.y, s.r * p.k * 0.8, s.r * p.k * cam.sinP * 0.7, 0, 0, TAU); ctx.fill(); ctx.stroke();
+      const rx = s.r * p.k * 0.8, ry = s.r * p.k * cam.sinP * 0.7, base = inYard ? s.c : '#9a9a8a';   // árnyalt kockakő: sötét alj, alapszín, világos tető
+      ctx.fillStyle = 'rgba(40,28,14,.35)'; ctx.beginPath(); ctx.ellipse(p.x + rx * 0.08, p.y + ry * 0.25, rx * 1.02, ry * 1.05, 0, 0, TAU); ctx.fill();
+      ctx.fillStyle = base; ctx.beginPath(); ctx.ellipse(p.x, p.y, rx, ry, 0, 0, TAU); ctx.fill();
+      ctx.fillStyle = 'rgba(255,248,225,.32)'; ctx.beginPath(); ctx.ellipse(p.x - rx * 0.18, p.y - ry * 0.28, rx * 0.6, ry * 0.5, 0, 0, TAU); ctx.fill();
     }
     for (const t of tufts) {
       const p = W.P(t.x, 0, t.z); if (p.x < -20 || p.x > w + 20) continue;
@@ -637,18 +639,64 @@
     ctx.save(); ctx.beginPath(); ctx.rect(-w, -hh * 1.3, w * 2, hh * 1.4); for (const r of wr) ctx.rect(X(r[0]), Y(r[1]), (r[2] - r[0]) * w, (r[3] - r[1]) * hh); ctx.clip('evenodd'); ctx.drawImage(im, -w / 2, -hh, w, hh); ctx.restore();
     const ey = EYES[pose]; if (ey) { ctx.save(); ctx.globalCompositeOperation = 'lighter'; const pu = 0.7 + 0.3 * Math.sin(W.time * 6); for (const [ex, eyy] of ey) { const g = ctx.createRadialGradient(X(ex), Y(eyy), 0, X(ex), Y(eyy), hh * 0.04); g.addColorStop(0, `rgba(255,230,90,${0.9 * pu})`); g.addColorStop(0.4, `rgba(255,120,20,${0.5 * pu})`); g.addColorStop(1, 'rgba(255,60,0,0)'); ctx.fillStyle = g; ctx.beginPath(); ctx.arc(X(ex), Y(eyy), hh * 0.04, 0, TAU); ctx.fill(); } ctx.restore(); }
   }
+  /* Tükröződés: a lakkozott táblán a bábuk halvány, függőlegesen tükrözött képe (csak a táblán belül). */
+  function drawReflections() {
+    if (!(Figures.ready)) return; ctx.save(); quad(-4, -4, 4, 4, 0); ctx.clip(); ctx.globalAlpha = W.tod === 'night' ? 0.1 : 0.15;
+    for (const e of W.pieces) {
+      if (e.state === 'dead' || (e.alpha !== undefined && e.alpha < 0.5) || !Figures.has(e.theme.id)) continue;
+      const X = e.x + e.ox, Z = e.z + e.oz, p = W.P(X, 0, Z); ctx.save(); ctx.translate(p.x, p.y + e.y * p.k * 0.8); ctx.scale(p.k, -p.k * 0.62); e.T = W.time; Figures.draw(ctx, e); ctx.restore();
+    }
+    ctx.restore(); ctx.globalAlpha = 1;
+  }
+  /* Napszak: nappal (napsugár-nyalábok), alkony (meleg narancs), éjszaka (kék sötét, a tábla közepe holdfényes, erős fáklyák, csillagok, szentjánosbogarak).
+     'auto': a készülék órája szerint. */
+  W.todMode = Util.store.get('ps_tod') || 'auto';
+  W.setTod = m => { W.todMode = m; Util.store.set('ps_tod', m); };
+  function currentTod() { if (W.todMode !== 'auto') return W.todMode; const h = new Date().getHours(); return h >= 7 && h < 17 ? 'day' : h >= 17 && h < 20 ? 'dusk' : h >= 5 && h < 7 ? 'dusk' : 'night'; }
+  const stars = Array.from({ length: 60 }, () => ({ x: Math.random(), y: Math.random() * 0.22, s: 0.6 + Math.random() * 1.4, ph: Math.random() * 6 }));
+  const flies = Array.from({ length: 18 }, () => ({ x: rnd(-7, 7), y: rnd(0.3, 1.8), z: rnd(-6.5, 6.5), ph: rnd(0, 6) }));
+  function drawTimeOfDay() {
+    W.tod = currentTod(); const c = W.P(0, 0, 0);
+    if (W.tod === 'day') {
+      if (W.q < 2) return; ctx.save(); ctx.globalCompositeOperation = 'lighter';
+      for (let i = 0; i < 4; i++) {
+        const a = 0.045 + 0.025 * Math.sin(W.time * 0.4 + i * 1.7), x0 = cam.W * (0.05 + i * 0.13), wdt = cam.W * (0.05 + (i % 2) * 0.04);
+        const g = ctx.createLinearGradient(x0, 0, x0 + cam.W * 0.5, cam.H); g.addColorStop(0, `rgba(255,236,170,${a})`); g.addColorStop(1, 'rgba(255,236,170,0)');
+        ctx.fillStyle = g; ctx.beginPath(); ctx.moveTo(x0, -10); ctx.lineTo(x0 + wdt, -10); ctx.lineTo(x0 + wdt + cam.W * 0.75, cam.H); ctx.lineTo(x0 + cam.W * 0.5, cam.H); ctx.closePath(); ctx.fill();
+      }
+      ctx.restore(); return;
+    }
+    ctx.save(); ctx.globalCompositeOperation = 'multiply';
+    if (W.tod === 'dusk') { const g = ctx.createLinearGradient(0, 0, 0, cam.H); g.addColorStop(0, '#f7a86a'); g.addColorStop(0.5, '#f2c08e'); g.addColorStop(1, '#c98a6e'); ctx.fillStyle = g; }
+    else { const g = ctx.createRadialGradient(c.x, c.y, c.k * 1.5, c.x, c.y, Math.max(cam.W, cam.H) * 0.75); g.addColorStop(0, '#b8c0e0'); g.addColorStop(0.45, '#6a76a8'); g.addColorStop(1, '#262c52'); ctx.fillStyle = g; }
+    ctx.fillRect(-20, -20, cam.W + 40, cam.H + 40); ctx.restore();
+  }
+  function drawNightLife() {
+    if (W.tod !== 'night') return; ctx.save(); ctx.globalCompositeOperation = 'lighter';
+    const hz = W.P(0, 0, W.flip ? 11 : -11).y;
+    for (const st of stars) { if (st.y * cam.H > hz - 6) continue; const tw = 0.5 + 0.5 * Math.sin(W.time * 2 + st.ph * 4); ctx.fillStyle = `rgba(255,250,220,${0.4 + 0.5 * tw})`; ctx.fillRect(st.x * cam.W, st.y * cam.H, st.s, st.s); }
+    for (const f of flies) {
+      const q = W.P(f.x + Math.sin(W.time * 0.5 + f.ph) * 0.6, f.y + Math.sin(W.time * 1.3 + f.ph) * 0.2, f.z + Math.cos(W.time * 0.4 + f.ph) * 0.5), b = Math.max(0, Math.sin(W.time * 1.7 + f.ph * 3));
+      if (b < 0.05) continue; const R = Math.max(2, q.k * 0.07); const g = ctx.createRadialGradient(q.x, q.y, 0, q.x, q.y, R * 3); g.addColorStop(0, `rgba(220,255,120,${0.9 * b})`); g.addColorStop(1, 'rgba(160,255,80,0)'); ctx.fillStyle = g; ctx.beginPath(); ctx.arc(q.x, q.y, R * 3, 0, TAU); ctx.fill();
+    }
+    ctx.restore();
+  }
   /* Fény: fáklyafény-tócsák a földön (vibráló), napsugár-nyalábok, porszemek a fényben. Olcsó: néhány gradiens képkockánként. */
   const motes = Array.from({ length: 34 }, () => ({ x: rnd(-6, 6), y: rnd(0.2, 3.2), z: rnd(-5, 5), ph: rnd(0, 6.3), s: rnd(0.5, 1.2) }));
   function drawLightFx() {
-    if (W.q === 0) return;
+    if (W.q === 0 && W.tod !== 'night') return;
+    const boost = W.tod === 'night' ? 2.4 : W.tod === 'dusk' ? 1.5 : 1;
     ctx.save(); ctx.globalCompositeOperation = 'lighter';
     for (const [x, z] of [[-4.9, -4.9], [4.9, -4.9], [-4.9, 4.9], [4.9, 4.9]]) {
-      const p = W.P(x, 0, z), f = 0.85 + 0.15 * Math.sin(W.time * 11 + x * 3) * Math.sin(W.time * 7.3 + z), R = p.k * 2.6 * f;
+      const p = W.P(x, 0, z), f = 0.85 + 0.15 * Math.sin(W.time * 11 + x * 3) * Math.sin(W.time * 7.3 + z), R = p.k * 2.6 * f * (boost > 1 ? 1.35 : 1);
+      ctx.globalAlpha = Math.min(1, boost * 0.8);
       ctx.save(); ctx.translate(p.x, p.y); ctx.scale(1, cam.sinP);
       const g = ctx.createRadialGradient(0, 0, 0, 0, 0, R); g.addColorStop(0, 'rgba(255,170,70,.22)'); g.addColorStop(0.5, 'rgba(255,130,40,.08)'); g.addColorStop(1, 'rgba(255,120,30,0)');
       ctx.fillStyle = g; ctx.beginPath(); ctx.arc(0, 0, R, 0, TAU); ctx.fill(); ctx.restore();
+      if (boost > 1) { const t = W.P(x, 1.7, z), gg = ctx.createRadialGradient(t.x, t.y, 0, t.x, t.y, t.k * 1.6); gg.addColorStop(0, `rgba(255,190,90,${0.35 * f})`); gg.addColorStop(1, 'rgba(255,140,40,0)'); ctx.fillStyle = gg; ctx.beginPath(); ctx.arc(t.x, t.y, t.k * 1.6, 0, TAU); ctx.fill(); }
     }
-    if (W.q >= 2) {
+    ctx.globalAlpha = 1;
+    if (W.q >= 2 && W.tod !== 'night') {
       for (const m of motes) {
         m.x += Math.sin(W.time * 0.4 + m.ph) * 0.004; m.y += 0.003 + Math.sin(W.time + m.ph) * 0.002; if (m.y > 3.6) { m.y = 0.2; m.x = rnd(-6, 6); m.z = rnd(-5, 5); }
         const q = W.P(m.x, m.y, m.z), tw2 = 0.5 + 0.5 * Math.sin(W.time * 2.3 + m.ph * 3); ctx.fillStyle = `rgba(255,236,180,${0.35 * tw2})`; ctx.beginPath(); ctx.arc(q.x, q.y, Math.max(0.8, q.k * 0.022 * m.s), 0, TAU); ctx.fill();
@@ -755,6 +803,7 @@
     }, W.q >= 2 ? 0.2 : 2.5);
     layer('board', ck + '|' + W.themes.w.id + W.themes.b.id, drawBoardBase);
     drawBoardDyn();
+    if (W.q >= 2) drawReflections();
     for (const it of sortedItems()) it.f();
     drawMarkers();
     if (W.dragonFx) {
@@ -771,7 +820,9 @@
     }
     if (W.crownFx) { const c = W.crownFx, p = W.P(c.x, c.y, c.z); S.crownGfx(ctx, p.x, p.y, p.k * 0.55); }
     drawParts();
+    drawTimeOfDay();
     drawLightFx();
+    drawNightLife();
     if (W.fog > 0) { ctx.fillStyle = `rgba(80,140,60,${W.fog * 0.28})`; ctx.fillRect(-20, -20, cam.W + 40, cam.H + 40); }
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     layer('ovl', cam.W + 'x' + cam.H + 'x' + dpr, drawOverlay);
