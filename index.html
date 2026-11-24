@@ -33,13 +33,13 @@
   </defs>
 </svg>
 
-<canvas id="c"></canvas>
-<div id="toast"></div>
+<canvas id="c" role="img" aria-label="Sakktábla a középkori udvarban: koppints a bábukra és a zöld mezőkre a lépéshez"></canvas>
+<div id="toast" role="status" aria-live="assertive"></div>
 
 <div id="hud" class="hidden">
   <div class="plate top" id="oppPlate"><span class="sw" id="oppSw"></span><b id="oppName">Ellenfél</b><i id="oppStat"></i></div>
-  <div id="turnBadge"></div>
-  <div id="hint"></div>
+  <div id="turnBadge" role="status" aria-live="polite"></div>
+  <div id="hint" role="status" aria-live="polite"></div>
   <div class="bottom">
     <div class="plate" id="mePlate"><span class="sw" id="meSw"></span><b id="meName">Te</b><i id="meStat"></i></div>
     <div class="btns">
@@ -109,7 +109,9 @@
 </div></div>
 
 <script src="firebase-config.js"></script>
+<script src="js/util.js"></script>
 <script src="js/chess.js"></script>
+<script src="js/protocol.js"></script>
 <script src="js/audio.js"></script>
 <script src="js/sprites.js"></script>
 <script src="js/figures.js"></script>

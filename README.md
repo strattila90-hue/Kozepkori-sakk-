@@ -53,4 +53,4 @@ Helyben: `python3 -m http.server` majd `http://localhost:8000`.
 - **QR-kód:** a szoba megnyitásakor a váróteremben a meghívó link QR-kódja is megjelenik (`js/qrcode.js`, MIT).
 
 ## Tesztelés
-`npm test` (vagy `node test/run-all.js`): szintaxis, eslint (ha telepített), egységtesztek (`test/unit.js`: sakkszabályok, szövegek, kiadási konzisztencia, eszközök) és böngészős füsttesztek (`test/smoke.js`: kijelölés, visszalépés, bot, online nézet-tájolás). Hosszabb véletlen-játszma minden végjátékkal: `npm run fuzz`. Részletek és a nyitott kockázatok: `docs/AUDIT.md`.
+`npm test` (vagy `node test/run-all.js`): szintaxis, eslint (ha telepített), egységtesztek (`test/unit.js`: sakkszabályok, online adat-ellenőrzés, szövegek, kiadási konzisztencia, eszközök) és böngészős füsttesztek (`test/smoke.js`: kijelölés, visszalépés, bot, online nézet-tájolás, hamisított szoba, elutasított lépés, animációs hiba). A tesztek saját szervert indítanak. Hosszabb véletlen-játszma minden végjátékkal: `npm run fuzz`. Részletek és a nyitott kockázatok: `docs/AUDIT.md`.

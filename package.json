@@ -1,6 +1,6 @@
 {
   "name": "parasztsakk",
-  "version": "0.9.4",
+  "version": "0.9.5",
   "private": true,
   "description": "Parasztsakk – A Véres Udvar: középkori, véres, vicces, szabályos sakk (PWA)",
   "scripts": {

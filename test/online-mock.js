@@ -11,6 +11,7 @@ window.__installMock = function () {
     subscribe(code, cb) { (subs[code] = subs[code] || []).push(cb); setTimeout(() => { const d = rd(code); if (d) cb(d); }, 0); return () => { subs[code] = subs[code].filter(x => x !== cb); }; },
     async sendMove(code, len, uci) { const d = rd(code); if (d.moves.length !== len || d.result) return false; d.moves.push(uci); d.draw = null; wr(code, d); return true; },
     async setResult(code, r) { const d = rd(code); if (d.result) return false; d.result = r; d.status = 'finished'; wr(code, d); return true; },
+    async get(code) { return rd(code); },
     async emote(code, by, kind) { const d = rd(code); d.emote = { by, kind, n: Date.now() }; wr(code, d); },
     async offerDraw(code, side) { const d = rd(code); d.draw = side; wr(code, d); },
   });

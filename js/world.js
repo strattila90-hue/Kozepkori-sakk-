@@ -15,6 +15,8 @@
   };
   const cam = W.cam;
   let canvas, ctx, dpr = 1, last = 0;
+  const layers = {};            // gyorsítótárazott rétegek (háttér, tábla, keret): lásd layer()
+  let shGrad = null;            // árnyék-színátmenet (resize() törli, ezért a használat előtt deklarált)
   var dirt = [], clouds = [], stones = [], tufts = [], wanderers = [], birds = [];
 
   /* ---------- Kamera ---------- */
@@ -65,8 +67,7 @@
   W.unfocus = function () { if (!W.userCam) { cam.tz = 1; cam.tcx = cam.bx; cam.tcy = cam.by; } };
 
   /* ---------- Teljesítmény: rétegek gyorsítótára, minőségi szintek ---------- */
-  const store = { get: k => { try { return localStorage.getItem(k); } catch (e) { return null; } }, set: (k, v) => { try { localStorage.setItem(k, v); } catch (e) { /* */ } } };
-  const layers = {};
+  const store = Util.store;
   function layer(name, key, drawFn, maxAge) {
     let L = layers[name]; const w = Math.ceil(cam.W * dpr), h = Math.ceil(cam.H * dpr);
     if (!L || L.c.width !== w || L.c.height !== h) { L = layers[name] = { c: document.createElement('canvas'), key: '', t: -9 }; L.c.width = w; L.c.height = h; L.g = L.c.getContext('2d'); }
@@ -419,7 +420,6 @@
     }
   }
 
-  let shGrad = null;
   function shadow(x, z, r, a) {
     const p = W.P(x, 0, z);
     if (W.q === 0) { ctx.fillStyle = 'rgba(24,12,6,' + Math.min(0.5, (a || 0.32) * 1.2) + ')'; ctx.beginPath(); ctx.ellipse(p.x + r * p.k * 0.2, p.y, r * p.k * 1.1, r * p.k * cam.sinP * 0.9, 0, 0, TAU); ctx.fill(); return; }

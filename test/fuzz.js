@@ -1,11 +1,11 @@
 // Automata hibakereső: véletlen játszmák + minden végjáték. Használat: node test/fuzz.js [játszmák]
-const { chromium } = require('playwright');
+const { chromium } = require('playwright'); const startServer = require('./server');
 (async () => {
-  const b = await chromium.launch(); const errs = [];
+  const srv = await startServer(); const URL = srv.url; const b = await chromium.launch(); const errs = [];
   for (const fate of ['dragon-burn', 'dragon-eat', 'axe', 'stab', 'plague']) {
     const p = await b.newPage({ viewport: { width: 430, height: 900 } });
     p.on('pageerror', e => errs.push(fate + ': ' + e.message)); p.on('console', m => { if (m.type() === 'error' && !/favicon|fonts|net::/.test(m.text())) errs.push(fate + ' console: ' + m.text().slice(0, 140)); });
-    await p.goto('http://localhost:8765/index.html'); await p.waitForTimeout(1500); await p.click('#btnLocal'); await p.waitForTimeout(500);
+    await p.goto(URL); await p.waitForTimeout(1500); await p.click('#btnLocal'); await p.waitForTimeout(500);
     await p.evaluate(f => { W.speed = 6; W.idleOn = true; if (f.startsWith('dragon')) { W.debugFate = 'dragon'; W.debugDragon = f.split('-')[1]; } else if (f !== 'plague') W.debugFate = f; }, fate);
     const click = async (sq, h) => { const [x, y] = await p.evaluate(([sq, h]) => { const q = W.sqPos(sq); const f = W.P(q.x, 0, q.z); return [f.x, f.y - h * f.k]; }, [sq, h === undefined ? 0.9 : h]); await p.mouse.click(x, y); };
     const idle = async () => { for (let k = 0; k < 600; k++) { if (!(await p.evaluate(() => W.busy || __G.pumping))) return; await p.waitForTimeout(40); } };
@@ -17,7 +17,7 @@ const { chromium } = require('playwright');
   }
   // véletlen játszma
   const p = await b.newPage({ viewport: { width: 430, height: 900 } }); p.on('pageerror', e => errs.push('rand: ' + e.message));
-  await p.goto('http://localhost:8765/index.html'); await p.waitForTimeout(1500); await p.click('#btnLocal'); await p.evaluate(() => { W.speed = 8; W.idleOn = true; });
+  await p.goto(URL); await p.waitForTimeout(1500); await p.click('#btnLocal'); await p.evaluate(() => { W.speed = 8; W.idleOn = true; });
   let n = 0; for (; n < 90; n++) {
     const mv = await p.evaluate(() => { const G = __G; if (G.over) return null; const ms = G.chess.moves(); const m = ms[Math.floor(Math.random() * ms.length)]; return { f: m.from, t: m.to, pr: !!m.promo }; }); if (!mv) break;
     for (let k = 0; k < 600; k++) { if (!(await p.evaluate(() => W.busy || __G.pumping))) break; await p.waitForTimeout(40); }
@@ -28,5 +28,5 @@ const { chromium } = require('playwright');
   }
   console.log('véletlen játszma lépések:', n, await p.evaluate(() => __G.chess.moveList.length));
   console.log('HIBÁK:', JSON.stringify([...new Set(errs)].slice(0, 10)));
-  await b.close();
+  await b.close(); srv.close();
 })();

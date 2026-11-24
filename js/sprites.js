@@ -387,7 +387,7 @@
   }
 
   function drawQueen(ctx, e, th) {
-    const b = sway(e, 0.015), t = e.T || 0;
+    const b = sway(e, 0.015);
     for (const k of [-1, 1]) { const dx = Math.sin((e.wp || 0) + (k > 0 ? 3.1 : 0)) * 0.09 * (e.mv || 0); poly(ctx, [[k * 0.1 + dx - 0.05, -0.07], [k * 0.1 + dx - 0.05, 0.0], [k * 0.1 + dx + 0.2, 0.0], [k * 0.1 + dx + 0.05, -0.07]], C.gold, 0.018); }
     ctx.save(); ctx.translate(0, b);
     // uszályos köpeny (hermelin szegéllyel)
@@ -407,7 +407,7 @@
     // bal kar: hosszú ujj
     poly(ctx, [[-0.16, -1.0], [-0.34, -0.7], [-0.5, -0.5], [-0.48, -0.38], [-0.3, -0.5], [-0.12, -0.8]], th.sleeve, 0.02); goldEdge(ctx, [[-0.5, -0.5], [-0.48, -0.38]], 0.03); hand(ctx, -0.47, -0.4, 2.2, e.skin);
     // fej: fátyol, korona
-    const hy = -1.22, hr = 0.16, tr = traits(e);
+    const hy = -1.22, hr = 0.16;
     if (head(ctx, e, 0.02, hy, hr, { tr: { sep: 1, freckles: false }, stern: true, nose: 1.0 })) {
       ctx.beginPath(); ctx.moveTo(-0.2, hy + 0.38); ctx.quadraticCurveTo(-0.27, hy - 0.2, 0.0, hy - hr * 1.12); ctx.quadraticCurveTo(0.27, hy - 0.2, 0.23, hy + 0.38); ctx.quadraticCurveTo(0.19, hy - 0.02, 0.1, hy - hr * 0.55); ctx.quadraticCurveTo(0.02, hy - hr * 0.85, -0.1, hy - hr * 0.5); ctx.quadraticCurveTo(-0.18, hy - 0.02, -0.2, hy + 0.38); paint(ctx, '#e8e0f0', 0.018);
       crownGfx(ctx, 0.03, hy - hr * 0.98, 0.5);
