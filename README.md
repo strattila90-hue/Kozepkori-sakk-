@@ -22,6 +22,9 @@ Fehér · Fekete · Vörös · Arany (mindenki a sajátját választja; azonos v
 - A győztes királyát megkoronázzák; a vesztes seregét **sárkány** elégeti, **hóhér** lefejezi, vagy egymást **nyakon szúrják**.
 - Döntetlennél a **Fekete Halál** visz el mindenkit.
 
+## v1.5.0 – Ácsolt Vár
+- **Fából, paraszti kivitelű menü:** gyalult deszkalap valódi faerezettel (rajzolt zajtextúra, nincs képfájl), faragott keret, kovácsoltvas sarokvasalás; a kártyák kiszögezett, enyhén ferde pergamen-hirdetmények; a gombok deszkalapok vasszegekkel és beégetett felirattal, nyomásra besüppednek; a választók fából, a kiválasztott sötétre égetve; a mezők fába vájt pergamenrések; a seregszínek festett fakorongok. Ugyanez a stílus a váróteremben, az eredmény- és az átváltozás-ablakban.
+
 ## v1.4.1 – hibajavítás
 Automata feltáró teszt: 3 teljes bot elleni játszma (éj/alkony/nappal, változó időjárás/eső/hó, minden halálnem), menübe lépés minden végjáték közben, átváltozás, fekvő képernyő, gyors koppintások.
 - **Javítva:** fekvő, alacsony képernyőn a parancssáv, a súgó és a körjelző takarta a táblát → a parancssáv jobb oldali oszlopba, a jelzések bal oldalra kerültek.
