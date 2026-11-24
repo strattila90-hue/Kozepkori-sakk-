@@ -34,6 +34,7 @@
       e.x = sx + (tx - sx) * pe; e.z = sz + (tz - sz) * pe;
       const f = (o.p * hops) % 1, air = Math.sin(f * Math.PI), ground = Math.max(0, 1 - Math.min(f, 1 - f) * 7);
       e.y = air * height; e.sy = 1 + 0.07 * air - 0.11 * ground; e.sx = 1 - 0.05 * air + 0.09 * ground;
+      e.wp = o.p * hops * Math.PI;      // lábak: lépésenként fél ciklus
       const idx = Math.floor(o.p * hops); if (idx !== last) { last = idx; SFX.step(); }
     }).then(() => { e.x = tx; e.z = tz; e.y = 0; e.mv = 0; e.busyAnim = false; e.sx = 1; e.sy = 1; });
   }
@@ -42,7 +43,7 @@
   async function travel(att, to, m) {
     const dist = Math.hypot(to.x - att.x, to.z - att.z), isN = att.type === 'N';
     SFX.hop();
-    const jobs = [hop(att, to.x, to.z, isN ? 0.7 : 0.35 + dist * 0.1, isN ? 1.1 : 0.3, isN ? 1 : Math.max(1, Math.round(dist / 1.2)))];
+    const jobs = [isN ? hop(att, to.x, to.z, 0.7, 1.1, 1) : hop(att, to.x, to.z, 0.4 + dist * 0.2, 0.06, Math.max(2, Math.round(dist / 0.42)))];   // gyalog lépked, a ló ugrik
     if (m.castle) {
       const rf = m.castle === 'K' ? m.from + 3 : m.from - 4, rt = m.castle === 'K' ? m.from + 1 : m.from - 1, r = W.pieceAt(rf);
       if (r) { const p = W.sqPos(rt); r.sq = rt; jobs.push(hop(r, p.x, p.z, 0.6, 0.5, 2)); W.say(r, L.pick('castle'), 1.4); }
@@ -67,7 +68,7 @@
     W.part({ kind: 'slash', x: (x.x + hx) / 2, y: hy + 0.2, z: (x.z + hz) / 2, vx: 0, vy: 0, vz: 0, g: 0, life: 0.26, size: 0.85, rot: sl - 0.5, color: o.blood ? '#ffffff' : '#ffe9a0' });
     W.part({ kind: 'slash', x: (x.x + hx) / 2, y: hy - 0.1, z: (x.z + hz) / 2, vx: 0, vy: 0, vz: 0, g: 0, life: 0.26, size: 0.7, rot: sl + 0.7, color: '#ffffff' });
     if (o.blood) {
-      SFX.stab(); y.hurt = 1; W.decal(hx + rnd(-0.3, 0.3), hz + rnd(-0.3, 0.3), 0.15);
+      SFX.stab(); y.hurt = 1; x.bloodBlade = true; W.decal(hx + rnd(-0.3, 0.3), hz + rnd(-0.3, 0.3), 0.15);
       for (let i = 0; i < (o.lethal ? 40 : 20); i++) W.part({ kind: 'blood', x: hx - ux * 0.2, y: hy + rnd(-0.35, 0.35), z: hz - uz * 0.2, vx: ux * rnd(1.5, 5) + rnd(-1.2, 1.2), vy: rnd(0.8, 3.8), vz: uz * rnd(1.5, 5) + rnd(-1.2, 1.2), g: 10, size: rnd(0.035, 0.1), color: pick(['#a50f0f', '#c01616', '#8a0a0a']), life: 1.4 });
       W.say(y, o.lethal ? L.pick('dying') : L.pick('hurt'), o.lethal ? 2.6 : 1.5); if (Math.random() < 0.5) SFX.ow(); W.shake = Math.max(W.shake, o.lethal ? 0.8 : 0.35);
     } else { SFX.clang(); sparks(hx, hy, hz); sparks(hx, hy, hz); sparks(hx, hy, hz); y.hurt = 0.6; W.shake = Math.max(W.shake, 0.15); }
@@ -180,7 +181,7 @@
     const to = W.sqPos(m.to);
     const dx = v.x - att.x, dz = v.z - att.z, dist = Math.hypot(dx, dz) || 1, ux = dx / dist, uz = dz / dist, isN = att.type === 'N';
     SFX.hop();
-    await hop(att, v.x - ux * 0.9, v.z - uz * 0.9, isN ? 0.65 : 0.3 + dist * 0.09, isN ? 1 : 0.3, isN ? 1 : Math.max(1, Math.round(dist / 1.2)));
+    await (isN ? hop(att, v.x - ux * 0.9, v.z - uz * 0.9, 0.65, 1, 1) : hop(att, v.x - ux * 0.9, v.z - uz * 0.9, 0.35 + dist * 0.18, 0.06, Math.max(2, Math.round(dist / 0.42))));
     W.faceTo(att, v.x, v.z); W.faceTo(v, att.x, att.z); W.focusOn((att.x + v.x) / 2, (att.z + v.z) / 2, 1.3);
     { const t1 = L.pick('engage'), t2 = L.pick('reply'); W.say(att, t1, L.dur(t1) + 0.4); W.setCheer(3.5); SFX.cheer(); await wait(1.3); W.say(v, t2, L.dur(t2), 1.3); await wait(1.3); }
     const rounds = 1 + (Math.random() < 0.6 ? 1 : 0) + (Math.random() < 0.35 ? 1 : 0);
@@ -332,12 +333,15 @@
     const mouthY = 1.25, footY = mouthY - MOUTH * DRAGON_H;       // a talp a tábla alatt: a nagy test elfedi a hátteret, a feje a bábuk fölött van
     const d = W.dragonFx = { x: 0, y: 9, z: out * 16, pose: toCam(-out) ? 'front' : 'back', h: DRAGON_H, breath: false };
     SFX.roar(); toast('Jön a sárkány!', 'bad'); W.setCheer(4); W.shake = 0.6;
-    d.walk = false; await tw(d, { x: 0, y: footY, z: zr + out * 3.4 }, 1.9, ease.eout);
-    const faceCam = toCam(-out); d.pose = faceCam ? 'front' : 'back'; W.shake = 0.7; SFX.thud();
+    d.walk = false; d.fly = true; W.every(1.9, 0.42, () => SFX.flap());
+    await tw(d, { x: 0, y: footY, z: zr + out * 3.4 }, 1.9, ease.eout); d.fly = false;
+    const faceCam = toCam(-out); d.pose = faceCam ? 'front' : 'back'; W.shake = 0.9; SFX.thud(); SFX.thud();
+    for (let i = 0; i < 26; i++) { const a = rnd(0, 6.28); W.part({ kind: 'smoke', x: d.x + Math.cos(a) * 1.5, y: 0.1, z: d.z + Math.sin(a) * 0.8, vx: Math.cos(a) * rnd(1.5, 3), vy: rnd(0.2, 0.8), vz: Math.sin(a) * rnd(1, 2), g: -0.1, drag: 1.4, size: rnd(0.25, 0.5), color: pick(['#b9a77a', '#a8956a', '#8a7a5a']), life: rnd(1, 1.8) }); }
     const mouthFire = (dur) => {
       d.pose = faceCam ? 'fire' : 'back'; d.breath = true;
       W.every(dur, 0.012, () => {
         const mx = d.x, my = d.y + d.h * MOUTH;
+        if (Math.random() < 0.5) W.part({ kind: 'spark', x: mx + rnd(-0.3, 0.3), y: my, z: d.z - out * 0.5, vx: rnd(-2, 2), vy: rnd(-1, 2), vz: -out * rnd(3, 6), g: 3, size: 0.05, color: pick(['#ffd04a', '#ff7a1a']), life: rnd(0.5, 1) });
         for (let k = 0; k < 4; k++) W.part({ kind: 'fire', x: mx + rnd(-0.25, 0.25), y: my + rnd(-0.15, 0.15), z: d.z - out * 0.5, vx: rnd(-1.2, 1.2), vy: rnd(-1.6, 0.4), vz: -out * rnd(2.4, 5.4), g: 0, size: rnd(0.22, 0.55), color: pick(['#ff4a12', '#ff8a1f', '#ffc83a', '#ffee70']), life: rnd(0.6, 1.0) });
         if (Math.random() < 0.35) W.part({ kind: 'smoke', x: mx, y: my, z: d.z - out * 0.8, vx: rnd(-0.6, 0.6), vy: rnd(0.2, 1.2), vz: -out * rnd(1, 3), g: -0.2, drag: 1, size: 0.4, color: '#3a2f28', life: 1.3 });
       });
@@ -347,6 +351,7 @@
       SFX.fire(); SFX.roar(); const done = [];
       d.x = -5.2; mouthFire(5); d.walk = true;
       W.every(5, 0.03, () => { for (const e of ps) if (!done.includes(e) && Math.abs(d.x - e.x) < 1.5) { done.push(e); burnDie(e); } });
+      W.every(5, 0.3, () => W.decal(d.x + rnd(-0.6, 0.6), zr + rnd(-0.8, 0.8), rnd(0.2, 0.4), 'rgba(30,20,12,.28)'));   // perzselt nyom
       await tw(d, { x: 5.2 }, 5, ease.lin); d.walk = false; d.breath = false;
       for (const e of ps) if (!done.includes(e)) { done.push(e); burnDie(e); }
     } else {
@@ -361,8 +366,8 @@
       }
       SFX.burp(); W.part({ kind: 'text', text: 'BÖÖÖFF!', x: d.x, y: 6, z: d.z, vy: 1.2, g: 0, life: 1.6, size: 0.6, color: '#c8ff7a' }); await wait(1.2);
     }
-    d.pose = toCam(out) ? 'front' : 'back'; SFX.roar();
-    await tw(d, { x: 0, y: 12, z: out * 18 }, 1.8, ease.ein);
+    d.pose = toCam(out) ? 'front' : 'back'; SFX.roar(); d.fly = true; W.every(1.8, 0.4, () => SFX.flap());
+    await tw(d, { x: 0, y: 12, z: out * 18 }, 1.8, ease.ein); d.fly = false;
     W.dragonFx = null;
     while (W.pieces.some(e => e.color === loser && e.busyAnim)) await wait(0.2);
   }

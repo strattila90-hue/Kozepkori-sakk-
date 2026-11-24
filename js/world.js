@@ -565,10 +565,28 @@
     const h = sc.h * p.k, w = im.width * h / im.height; if (sc.stat) shadow(sc.x, sc.z, 0.5, 0.35);
     ctx.drawImage(im, p.x - w / 2, p.y - h + 2, w, h);
   }
+  /* Tömeg: a képcsík emberenként sávokra bontva, mindenki a saját ütemében mocorog, ujjong; a hátsó sorok párásak (légperspektíva). */
+  const hazeC = new Map();
+  function hazed(im, amt) {
+    if (amt <= 0.01) return im; const key = im.src + amt.toFixed(2); let c = hazeC.get(key); if (c) return c;
+    c = document.createElement('canvas'); c.width = im.width; c.height = im.height; const g = c.getContext('2d'); g.drawImage(im, 0, 0);
+    g.globalCompositeOperation = 'source-atop'; g.fillStyle = `rgba(150,170,195,${amt})`; g.fillRect(0, 0, c.width, c.height); hazeC.set(key, c); return c;
+  }
   function drawStrip(st) {
-    const im = Figures.extra('crowd' + st.k.slice(5)) || Figures.extra(st.k); if (!im) return; const p = W.P(st.x, 0, st.z); if (p.x < -500 || p.x > cam.W + 500) return;
-    const h = st.h * p.k, w = im.width * h / im.height, bob = W.cheerT > 0 ? Math.abs(Math.sin(W.time * 9 + st.ph)) * 0.09 * p.k : Math.sin(W.time * 2 + st.ph) * 0.012 * p.k;
-    ctx.save(); ctx.translate(p.x, p.y - bob); if (st.flip) ctx.scale(-1, 1); ctx.drawImage(im, -w / 2, -h, w, h); ctx.restore();
+    const im0 = Figures.extra('crowd' + st.k.slice(5)) || Figures.extra(st.k); if (!im0) return; const p = W.P(st.x, 0, st.z); if (p.x < -500 || p.x > cam.W + 500) return;
+    const far = clamp((-W.depth(st.z) - 5.5) / 3, 0, 1), im = W.q >= 1 ? hazed(im0, Math.round(far * 4) / 4 * 0.22) : im0;
+    const h = st.h * p.k, w = im.width * h / im.height, n = Math.max(4, Math.round(im.width / im.height * 4.2)), cheer = W.cheerT > 0;
+    { ctx.save(); ctx.translate(p.x, p.y); ctx.scale(1, cam.sinP * 0.5); const g = ctx.createRadialGradient(0, 0, 0, 0, 0, w * 0.55); g.addColorStop(0, 'rgba(30,18,8,.35)'); g.addColorStop(1, 'rgba(30,18,8,0)'); ctx.fillStyle = g; ctx.beginPath(); ctx.arc(0, 0, w * 0.55, 0, TAU); ctx.fill(); ctx.restore(); }
+    ctx.save(); ctx.translate(p.x, p.y); if (st.flip) ctx.scale(-1, 1);
+    for (let i = 0; i < n; i++) {
+      const hs = ((i * 73 + st.ph * 13) % 10) / 10, sx = i * im.width / n, sw = im.width / n;
+      const bob = cheer ? Math.max(0, Math.sin(W.time * (8 + hs * 4) + st.ph + i * 1.9)) * (0.06 + 0.07 * hs) * p.k
+        : (Math.sin(W.time * (1.6 + hs) + st.ph + i * 1.3) * 0.012 + Math.max(0, Math.sin(W.time * 0.7 + i * 2.1 + st.ph) - 0.93) * 0.5) * p.k;
+      const sway = cheer ? Math.sin(W.time * 6 + i) * 0.02 : Math.sin(W.time * 0.9 + i * 1.7 + st.ph) * 0.012;
+      ctx.save(); ctx.translate(-w / 2 + (i + 0.5) * w / n, -bob); ctx.rotate(sway);
+      ctx.drawImage(im, sx, 0, sw + (i < n - 1 ? 1 : 0), im.height, -w / n / 2, -h, w / n + (i < n - 1 ? 0.6 : 0), h); ctx.restore();
+    }
+    ctx.restore();
     if (st.say) { const hp = W.P(st.x + st.say.dx, st.h + 0.15, st.z); bubble(st.say, hp.x, hp.y, p.k, 0); }
   }
   function drawActor(a) {
@@ -598,6 +616,18 @@
     }
   }
 
+  /* Sárkány: a festett kép szárnyai külön, a vállnál elforgatva csapkodnak; szemek izzanak. */
+  const WINGS = { front: [[0, 0.06, 0.37, 0.6, 0.37, 0.3], [0.63, 0.06, 1, 0.6, 0.63, 0.3]], fire: [[0, 0.06, 0.36, 0.6, 0.36, 0.3], [0.64, 0.06, 1, 0.6, 0.64, 0.3]], back: [[0, 0.08, 0.36, 0.62, 0.36, 0.3], [0.64, 0.08, 1, 0.62, 0.64, 0.3]] };
+  const EYES = { front: [[0.41, 0.265], [0.6, 0.265]], fire: [[0.43, 0.2], [0.6, 0.2]] };
+  function drawDragonImg(im, hh, flap, pose, d) {
+    const w = im.width * hh / im.height, X = f => -w / 2 + f * w, Y = f => -hh + f * hh, wr = WINGS[pose] || WINGS.front;
+    wr.forEach((r, i) => {
+      const s = i ? 1 : -1; ctx.save(); ctx.translate(X(r[4]), Y(r[5])); ctx.rotate(-s * flap);
+      ctx.drawImage(im, r[0] * im.width, r[1] * im.height, (r[2] - r[0]) * im.width, (r[3] - r[1]) * im.height, X(r[0]) - X(r[4]), Y(r[1]) - Y(r[5]), (r[2] - r[0]) * w, (r[3] - r[1]) * hh); ctx.restore();
+    });
+    ctx.save(); ctx.beginPath(); ctx.rect(-w, -hh * 1.3, w * 2, hh * 1.4); for (const r of wr) ctx.rect(X(r[0]), Y(r[1]), (r[2] - r[0]) * w, (r[3] - r[1]) * hh); ctx.clip('evenodd'); ctx.drawImage(im, -w / 2, -hh, w, hh); ctx.restore();
+    const ey = EYES[pose]; if (ey) { ctx.save(); ctx.globalCompositeOperation = 'lighter'; const pu = 0.7 + 0.3 * Math.sin(W.time * 6); for (const [ex, eyy] of ey) { const g = ctx.createRadialGradient(X(ex), Y(eyy), 0, X(ex), Y(eyy), hh * 0.04); g.addColorStop(0, `rgba(255,230,90,${0.9 * pu})`); g.addColorStop(0.4, `rgba(255,120,20,${0.5 * pu})`); g.addColorStop(1, 'rgba(255,60,0,0)'); ctx.fillStyle = g; ctx.beginPath(); ctx.arc(X(ex), Y(eyy), hh * 0.04, 0, TAU); ctx.fill(); } ctx.restore(); }
+  }
   /* Fény: fáklyafény-tócsák a földön (vibráló), napsugár-nyalábok, porszemek a fényben. Olcsó: néhány gradiens képkockánként. */
   const motes = Array.from({ length: 34 }, () => ({ x: rnd(-6, 6), y: rnd(0.2, 3.2), z: rnd(-5, 5), ph: rnd(0, 6.3), s: rnd(0.5, 1.2) }));
   function drawLightFx() {
@@ -721,9 +751,11 @@
     if (W.dragonFx) {
       const d = W.dragonFx, p = W.P(d.x, d.y, d.z), key = 'dragon_' + (d.pose || 'front');
       if (Figures.extra(key)) {
-        const flap = Math.sin(W.time * (d.y > 1.5 ? 9 : 5)) * 0.04, step = d.walk ? Math.sin(W.time * 9) : 0, br = d.breath ? Math.sin(W.time * 22) * 0.015 : 0;
-        shadow(d.x, d.z, (d.h || 3.4) * 0.3, 0.35);
-        ctx.save(); ctx.translate(p.x, p.y - Math.abs(step) * 0.14 * p.k); ctx.rotate(step * 0.05 + (d.y > 1.5 ? Math.sin(W.time * 3) * 0.03 : 0)); ctx.scale(p.k * (1 + flap + br), p.k * (1 - flap * 0.8 - br)); Figures.sprite(ctx, key, d.h || 3.4, 0); ctx.restore();
+        const step = d.walk ? Math.sin(W.time * 9) : 0, br = d.breath ? Math.sin(W.time * 22) * 0.015 : 0;
+        shadow(d.x, d.z, (d.h || 3.4) * 0.3 * (d.fly ? 0.75 : 1), d.fly ? 0.22 : 0.4);
+        const wing = d.fly ? Math.sin(W.time * 7) * 0.32 + 0.08 : Math.sin(W.time * 1.8) * 0.06 + (d.breath ? 0.1 : 0);
+        ctx.save(); ctx.translate(p.x, p.y - Math.abs(step) * 0.14 * p.k); ctx.rotate(step * 0.05 + (d.fly ? Math.sin(W.time * 3) * 0.03 : 0)); ctx.scale(p.k * (1 + br), p.k * (1 - br) * (1 + (d.fly ? Math.sin(W.time * 7 + 1.5) * 0.02 : 0)));
+        drawDragonImg(Figures.extra(key), d.h || 3.4, wing, d.pose || 'front', d); ctx.restore();
         if (d.breath) { const gp = W.P(d.x, d.y + (d.h || 3.4) * 0.7, d.z), gg = ctx.createRadialGradient(gp.x, gp.y, 0, gp.x, gp.y, gp.k * 1.7); gg.addColorStop(0, 'rgba(255,170,40,.38)'); gg.addColorStop(1, 'rgba(255,100,0,0)'); ctx.fillStyle = gg; ctx.fillRect(gp.x - gp.k * 1.8, gp.y - gp.k * 1.8, gp.k * 3.6, gp.k * 3.6); }
       }
       else { ctx.save(); ctx.translate(p.x, p.y); ctx.scale(p.k * (d.face || 1), p.k); S.dragon(ctx, d, W.time); ctx.restore(); }

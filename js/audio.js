@@ -243,6 +243,9 @@
     oink() {
       if (!ok()) return; const t = now(); osc('sawtooth', 150, 90, t, 0.18, 0.25); osc('sawtooth', 130, 80, t + 0.2, 0.2, 0.25);
     },
+    flap() { // szárnycsapás
+      if (!ok()) return; const t = now(); const f = noise(t, 0.35, 0.35, 'lowpass', 260, 1.5); f.frequency.exponentialRampToValueAtTime(700, t + 0.12); f.frequency.exponentialRampToValueAtTime(180, t + 0.33); osc('sine', 70, 40, t, 0.25, 0.25);
+    },
     drum(dur) { // pergődob (kivégzés előtt): gyorsuló, erősödő pergés, a végén nagy ütés
       if (!ok()) return; const t = now(); dur = dur || 2;
       for (let x = 0; x < dur; x += 0.05) { const k = x / dur; noise(t + x, 0.05, 0.05 + 0.2 * k, 'bandpass', 1500 + 600 * k, 1.2); if ((x * 20 | 0) % 4 === 0) osc('sine', 140, 90, t + x, 0.06, 0.05 + 0.1 * k); }

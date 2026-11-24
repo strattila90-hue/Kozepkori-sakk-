@@ -22,6 +22,12 @@ Fehér · Fekete · Vörös · Arany (mindenki a sajátját választja; azonos v
 - A győztes királyát megkoronázzák; a vesztes seregét **sárkány** elégeti, **hóhér** lefejezi, vagy egymást **nyakon szúrják**.
 - Döntetlennél a **Fekete Halál** visz el mindenkit.
 
+## v0.10.0
+- **Szúró kezek:** támadáskor a bábu karja hátralendül, majd előredöf (gyalog/futó: tőr, király/királynő/lovag: kard, bástya: lándzsa); a találat után véres a penge.
+- **Lépő lábak:** a gyalog és a bástya lábai felváltva lépnek, a lovas lova lépked; ugrálás helyett lépegetés (a ló ugrik). A palástosok ringatózva vonulnak.
+- **Élőbb tömeg:** mindenki a saját ütemében mocorog és ugrál ujjongáskor, a hátsó sorok párásak, a tömeg árnyékot vet.
+- **Sárkány:** csapkodó szárnyak és szárnysuhogás, izzó szemek, porfelhős landolás, szikrázó tűz, perzselt nyom a táblán.
+
 ## v0.9.9
 - **Szebb tábla:** a rikító sárga–fekete helyett tölgy- és diófa intarzia faerezettel, faragott diófa keret arany szegecsekkel.
 - **Nyugodtabb bábujelölés:** a vastag kettős gyűrűk helyett áttetsző, seregszínű talpkorong; a léphető bábuk alatt lágyan pulzáló arany fény; aranyszínű kijelölés, finomabb célpontok.
