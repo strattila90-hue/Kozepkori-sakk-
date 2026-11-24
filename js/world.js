@@ -28,13 +28,13 @@
     f = !!f; if (f === W.flip) return; W.flip = f;
     for (const c of W.crowd) { c.z = -c.z; c.home.z = -c.home.z; }
     for (const w of wanderers) w.z = -w.z;
-    for (const t of (W.strips || []).concat(W.scenery || [])) t.z = -t.z;
+    for (const t of (W.strips || []).concat(W.scenery || [], typeof Scenes !== 'undefined' ? Scenes.list : [])) t.z = -t.z;
   };
   W.sqPos = sq => ({ x: (sq & 7) - 3.5, z: (sq >> 3) - 3.5 });
   W.sqAt = (x, z) => clamp(Math.round(z + 3.5), 0, 7) * 8 + clamp(Math.round(x + 3.5), 0, 7);
 
-  W.resize = function () {
-    dpr = Math.min(2, window.devicePixelRatio || 1);
+  W.resize = function (keepCam) {
+    const dev = window.devicePixelRatio || 1; dpr = W.q >= 2 ? Math.min(2, dev) : W.q === 1 ? Math.min(1.5, dev) : Math.min(1, dev) * 0.85;
     const w = window.innerWidth, h = window.innerHeight;
     canvas.width = Math.round(w * dpr); canvas.height = Math.round(h * dpr);
     canvas.style.width = w + 'px'; canvas.style.height = h + 'px';
@@ -42,7 +42,8 @@
     const dn = cam.D - 4.5 * cam.cosP, df = cam.D + 4.5 * cam.cosP;
     const fW = 0.985 * w * dn / 9, fH = 0.6 * h / (4.5 * cam.sinP * (1 / dn + 1 / df));
     cam.F0 = Math.min(fW, fH); cam.bx = w / 2; cam.by = h * 0.5 + 6;
-    cam.zoom = cam.tz = 1; cam.F = cam.F0; cam.cx = cam.tcx = cam.bx; cam.cy = cam.tcy = cam.by; W.userCam = false;
+    if (!keepCam) { cam.zoom = cam.tz = 1; cam.F = cam.F0; cam.cx = cam.tcx = cam.bx; cam.cy = cam.tcy = cam.by; W.userCam = false; }
+    for (const k in layers) delete layers[k]; shGrad = null; vigKey = '';
   };
   function clampPan() {
     const F = cam.F0 * cam.tz, dn = cam.D - 4.5 * cam.cosP, halfW = 4.5 * F / dn, halfH = 4.5 * cam.sinP * F / cam.D;
@@ -62,6 +63,28 @@
     cam.tz = zoom; cam.tcx = cam.W / 2 - X * F / dep; cam.tcy = cam.by - Z * cam.sinP * F / dep; clampPan();
   };
   W.unfocus = function () { if (!W.userCam) { cam.tz = 1; cam.tcx = cam.bx; cam.tcy = cam.by; } };
+
+  /* ---------- Teljesítmény: rétegek gyorsítótára, minőségi szintek ---------- */
+  const store = { get: k => { try { return localStorage.getItem(k); } catch (e) { return null; } }, set: (k, v) => { try { localStorage.setItem(k, v); } catch (e) { /* */ } } };
+  const layers = {};
+  function layer(name, key, drawFn, maxAge) {
+    let L = layers[name]; const w = Math.ceil(cam.W * dpr), h = Math.ceil(cam.H * dpr);
+    if (!L || L.c.width !== w || L.c.height !== h) { L = layers[name] = { c: document.createElement('canvas'), key: '', t: -9 }; L.c.width = w; L.c.height = h; L.g = L.c.getContext('2d'); }
+    if (L.key !== key || (maxAge && W.time - L.t > maxAge)) {
+      const main = ctx; ctx = L.g; ctx.setTransform(dpr, 0, 0, dpr, 0, 0); ctx.clearRect(0, 0, cam.W, cam.H);
+      try { drawFn(); } finally { ctx = main; } L.key = key; L.t = W.time;
+    }
+    ctx.drawImage(L.c, 0, 0, cam.W, cam.H);
+  }
+  W.perfMode = store.get('ps_perf') || 'auto';
+  W.setPerf = function (m) { W.perfMode = m; store.set('ps_perf', m); initQuality(); W.resize(); };
+  function initQuality() {
+    const weak = (navigator.hardwareConcurrency || 8) <= 4 || (navigator.deviceMemory || 4) <= 3 || /Android.*(SM-A|Redmi|Moto G|Lite)/i.test(navigator.userAgent);
+    W.q = W.perfMode === 'low' ? 0 : W.perfMode === 'high' ? 2 : (weak ? 1 : 2); W.autoQ = W.perfMode === 'auto'; W.fpsCap = W.q === 0 ? 30 : 0; W._n = 0; W._ema = 0.016;
+    S.setQuality(W.q ? 1 : 0);
+  }
+  W.setQ = function (q) { W.q = q; S.setQuality(q ? 1 : 0); W.fpsCap = q === 0 ? 30 : 0; W.resize(true); };
+  const maxParts = () => (W.q >= 2 ? 900 : W.q === 1 ? 500 : 240);
 
   /* ---------- Tween ---------- */
   const lin = t => t, eio = t => (t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2), eout = t => 1 - (1 - t) * (1 - t), ein = t => t * t;
@@ -104,7 +127,7 @@
   W.setup = function (game) {
     W.pieces = []; W.bodies = []; W.actors = []; W.parts = []; W.decals = []; W.tweens = []; W.emitters = [];
     W.ending = false; W.busy = false; W.hl = { sel: -1, targets: [], last: [-1, -1], check: -1 };
-    W.crownFx = null; W.dragonFx = null; W.fog = 0;
+    W.skip = false; W.moverEnt = null; W.crownFx = null; W.dragonFx = null; W.fog = 0;
     for (const c of W.crowd) { c.hidden = false; c.cheer = 0; }
     game.board.forEach((ch, sq) => { if (ch) W.pieces.push(W.mkPiece(ch, sq)); });
   };
@@ -123,7 +146,7 @@
   W.setCheer = s => { W.cheerT = Math.max(W.cheerT, s); };
 
   function buildScenery() {
-    W.strips = []; const rows = [['crowd1', -4.7, -6.3, 2.1, 0], ['crowd2', 0.2, -6.3, 2.1, 1], ['crowd4', 5.0, -6.3, 2.1, 0], ['crowd4', -5.1, -7.7, 2.3, 1], ['crowd1', -0.6, -7.7, 2.3, 1], ['crowd2', 4.6, -7.7, 2.3, 0],
+    W.strips = []; const rows = [['crowd2', -0.2, -6.3, 2.1, 1], ['crowd1', -0.5, -7.7, 2.3, 1],
       ['crowd2', -3.4, 6.7, 1.55, 1], ['crowd4', 0.2, 6.7, 1.55, 0], ['crowd1', 3.6, 6.7, 1.55, 1], ['crowd4', -6.8, 0.5, 1.7, 0], ['crowd1', 6.8, 0.5, 1.7, 1], ['crowd2', -7.0, -3, 1.9, 1], ['crowd4', 7.1, -3, 1.9, 0]];
     for (const [k, x, z, h, flip] of rows) W.strips.push({ k, x, z, h, flip, ph: Math.random() * 6, say: null });
     W.scenery = [{ k: 'tavern', x: -5.6, z: -9.6, h: 3.7 }, { k: 'pigfarm', x: 5.5, z: -9.4, h: 2.6 },
@@ -152,7 +175,8 @@
 
   /* ---------- Részecskék ---------- */
   W.part = function (o) {
-    if (W.parts.length > 900) W.parts.shift();
+    if (W.q < 2 && o.kind === 'smoke' && Math.random() < (W.q ? 0.4 : 0.7)) return;
+    if (W.parts.length > maxParts()) W.parts.shift();
     W.parts.push(Object.assign({ x: 0, y: 0, z: 0, vx: 0, vy: 0, vz: 0, g: 9, life: 1, max: 1, size: 0.05, color: '#a00', kind: 'dot', rot: 0, vr: 0, drag: 0 }, o, { max: o.life || 1 }));
   };
   W.decal = function (x, z, r, color) {
@@ -325,7 +349,7 @@
     }
   }
 
-  function drawBoard() {
+  function drawBoardBase() {
     const half = 4, fr = 4.5, nz = W.flip ? -fr : fr;
     ctx.fillStyle = '#4a2c12';
     for (const [a, b, c, d] of [[-fr, nz, fr, nz], [-fr, -fr, -fr, fr], [fr, -fr, fr, fr]]) {
@@ -354,9 +378,6 @@
       quad(x0, z0, x0 + 1, z0 + 1, 0); ctx.fillStyle = tg; ctx.fill();
       // márványerezet
       if (W.q > 0) { ctx.strokeStyle = light ? 'rgba(150,100,20,.18)' : 'rgba(255,255,255,.08)'; ctx.lineWidth = 1; ctx.beginPath(); const m = (a, b, t) => ({ x: a.x + (b.x - a.x) * t, y: a.y + (b.y - a.y) * t }); const v1 = m(c0, c3, 0.2 + ((sq * 37) % 50) / 100), v2 = m(c1, c2, 0.3 + ((sq * 53) % 50) / 100), mid = m(m(c0, c2, 0.5), c1, ((sq * 29) % 40) / 100 - 0.2); ctx.moveTo(v1.x, v1.y); ctx.quadraticCurveTo(mid.x, mid.y, v2.x, v2.y); ctx.stroke(); }
-      const lm = W.hl.last;
-      if (sq === lm[0] || sq === lm[1]) { quad(x0, z0, x0 + 1, z0 + 1, 0); ctx.fillStyle = 'rgba(255,215,60,.42)'; ctx.fill(); }
-      if (sq === W.hl.check) { quad(x0, z0, x0 + 1, z0 + 1, 0); ctx.fillStyle = `rgba(200,20,20,${0.35 + 0.25 * Math.sin(W.time * 8)})`; ctx.fill(); }
       // élvilágítás: felül/balra fény, lent/jobbra árnyék (képernyő szerint)
       const pts = [c0, c1, c2, c3], mids = pts.map((p, i) => { const q = pts[(i + 1) % 4]; return { i, mx: (p.x + q.x) / 2, my: (p.y + q.y) / 2 }; });
       const top = mids.reduce((a, b) => (b.my < a.my ? b : a)), bot = mids.reduce((a, b) => (b.my > a.my ? b : a)), lef = mids.reduce((a, b) => (b.mx < a.mx ? b : a)), rig = mids.reduce((a, b) => (b.mx > a.mx ? b : a));
@@ -371,6 +392,10 @@
       ctx.fillText('abcdefgh'[i], a.x, a.y); ctx.fillText(String(8 - i), b.x, b.y);
       const a2 = W.P(i - 3.5, 0, -(nz > 0 ? 4.33 : -4.33)), b2 = W.P(-(W.flip ? 4.33 : -4.33), 0, i - 3.5); ctx.fillText('abcdefgh'[i], a2.x, a2.y); ctx.fillText(String(8 - i), b2.x, b2.y);
     }
+  }
+  function drawBoardDyn() {
+    for (const sq of W.hl.last) if (sq >= 0) { const q = W.sqPos(sq); quad(q.x - 0.5, q.z - 0.5, q.x + 0.5, q.z + 0.5, 0); ctx.fillStyle = 'rgba(255,215,60,.45)'; ctx.fill(); }
+    if (W.hl.check >= 0) { const q = W.sqPos(W.hl.check); quad(q.x - 0.5, q.z - 0.5, q.x + 0.5, q.z + 0.5, 0); ctx.fillStyle = `rgba(200,20,20,${0.35 + 0.25 * Math.sin(W.time * 8)})`; ctx.fill(); }
     for (const d of W.decals) {
       ctx.beginPath();
       d.pts.forEach((m, i) => { const a = d.rot + i * TAU / d.pts.length, p = W.P(d.x + Math.cos(a) * d.r * m, 0, d.z + Math.sin(a) * d.r * m); i ? ctx.lineTo(p.x, p.y) : ctx.moveTo(p.x, p.y); });
@@ -397,24 +422,26 @@
 
   let shGrad = null;
   function shadow(x, z, r, a) {
-    const p = W.P(x, 0, z); if (!shGrad) { shGrad = ctx.createRadialGradient(0, 0, 0, 0, 0, 1); shGrad.addColorStop(0, 'rgba(24,12,6,.62)'); shGrad.addColorStop(0.55, 'rgba(24,12,6,.34)'); shGrad.addColorStop(1, 'rgba(24,12,6,0)'); }
+    const p = W.P(x, 0, z);
+    if (W.q === 0) { ctx.fillStyle = 'rgba(24,12,6,' + Math.min(0.5, (a || 0.32) * 1.2) + ')'; ctx.beginPath(); ctx.ellipse(p.x + r * p.k * 0.2, p.y, r * p.k * 1.1, r * p.k * cam.sinP * 0.9, 0, 0, TAU); ctx.fill(); return; }
+    if (!shGrad) { shGrad = ctx.createRadialGradient(0, 0, 0, 0, 0, 1); shGrad.addColorStop(0, 'rgba(24,12,6,.62)'); shGrad.addColorStop(0.55, 'rgba(24,12,6,.34)'); shGrad.addColorStop(1, 'rgba(24,12,6,0)'); }
     ctx.save(); ctx.translate(p.x + r * p.k * 0.28, p.y + r * p.k * cam.sinP * 0.12); ctx.scale(r * p.k * 1.35, r * p.k * cam.sinP * 1.15);
     ctx.globalAlpha = Math.min(1, (a || 0.32) / 0.32 * 0.95); ctx.fillStyle = shGrad; ctx.beginPath(); ctx.arc(0, 0, 1, 0, TAU); ctx.fill(); ctx.restore();
   }
 
   function drawBubble(text, x, y, k) {
-    const fs = Math.max(11, Math.min(17, k * 0.2)); ctx.font = `bold ${fs}px "IM Fell English", Georgia, serif`;
-    const maxW = Math.max(110, Math.min(cam.W * 0.55, fs * 11)), words = text.split(' '), lines = []; let cur = '';
+    const fs = Math.max(14, Math.min(19, k * 0.24)); ctx.font = `700 ${fs}px Georgia, "Times New Roman", serif`;
+    const maxW = Math.max(130, Math.min(cam.W * 0.62, fs * 12)), words = text.split(' '), lines = []; let cur = '';
     for (const w of words) { const t = cur ? cur + ' ' + w : w; if (ctx.measureText(t).width > maxW && cur) { lines.push(cur); cur = w; } else cur = t; } if (cur) lines.push(cur);
     let tw = 0; for (const l of lines) tw = Math.max(tw, ctx.measureText(l).width);
-    const w = tw + fs * 1.1, lh = fs * 1.2, h = lines.length * lh + fs * 0.7, bx = Math.max(w / 2 + 6, Math.min(cam.W - w / 2 - 6, x)), by = Math.max(h + 6, y);
+    const w = tw + fs * 1.2, lh = fs * 1.25, h = lines.length * lh + fs * 0.8, bx = Math.max(w / 2 + 6, Math.min(cam.W - w / 2 - 6, x)), by = Math.max(h + 6, y);
     ctx.save(); ctx.translate(bx, by);
-    ctx.beginPath(); ctx.moveTo(-w / 2 + 7, -h); ctx.lineTo(w / 2 - 7, -h); ctx.quadraticCurveTo(w / 2, -h, w / 2, -h + 7); ctx.lineTo(w / 2, -7); ctx.quadraticCurveTo(w / 2, 0, w / 2 - 7, 0);
-    const tx = Math.max(-w / 2 + 14, Math.min(w / 2 - 14, x - bx)); ctx.lineTo(tx + 6, 0); ctx.lineTo(tx, fs * 0.6); ctx.lineTo(tx - 6, 0); ctx.lineTo(-w / 2 + 7, 0); ctx.quadraticCurveTo(-w / 2, 0, -w / 2, -7); ctx.lineTo(-w / 2, -h + 7); ctx.quadraticCurveTo(-w / 2, -h, -w / 2 + 7, -h); ctx.closePath();
-    ctx.fillStyle = '#fbf0cf'; ctx.fill(); ctx.strokeStyle = '#1c1310'; ctx.lineWidth = 2; ctx.stroke();
-    ctx.fillStyle = '#1c1310'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; lines.forEach((l, i) => ctx.fillText(l, 0, -h + fs * 0.35 + lh * (i + 0.5))); ctx.restore();
+    ctx.beginPath(); ctx.moveTo(-w / 2 + 8, -h); ctx.lineTo(w / 2 - 8, -h); ctx.quadraticCurveTo(w / 2, -h, w / 2, -h + 8); ctx.lineTo(w / 2, -8); ctx.quadraticCurveTo(w / 2, 0, w / 2 - 8, 0);
+    const tx = Math.max(-w / 2 + 16, Math.min(w / 2 - 16, x - bx)); ctx.lineTo(tx + 7, 0); ctx.lineTo(tx, fs * 0.7); ctx.lineTo(tx - 7, 0); ctx.lineTo(-w / 2 + 8, 0); ctx.quadraticCurveTo(-w / 2, 0, -w / 2, -8); ctx.lineTo(-w / 2, -h + 8); ctx.quadraticCurveTo(-w / 2, -h, -w / 2 + 8, -h); ctx.closePath();
+    ctx.shadowColor = 'rgba(0,0,0,.45)'; ctx.shadowBlur = 6; ctx.shadowOffsetY = 2; ctx.fillStyle = '#fffbe8'; ctx.fill(); ctx.shadowColor = 'transparent';
+    ctx.strokeStyle = '#1c1310'; ctx.lineWidth = 2.5; ctx.stroke();
+    ctx.fillStyle = '#120a06'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; lines.forEach((l, i) => ctx.fillText(l, 0, -h + fs * 0.4 + lh * (i + 0.5))); ctx.restore();
   }
-
   function drawMarkers() {
     const t = W.time;
     // bejelölt bábu: nagy zöld nyíl + gyűrű
@@ -538,6 +565,7 @@
       if (Math.random() < 0.002) w.pause = rnd(1, 3);
     }
   }
+  const root_Scenes = () => typeof Scenes !== 'undefined';
   function sortedItems() {
     const items = [];
     for (const e of W.pieces) items.push({ z: W.depth(e.z + e.oz) + e.y * 0.001, f: () => drawPieceEnt(e) });
@@ -566,6 +594,7 @@
         ctx.restore();
       } });
     }
+    if (root_Scenes()) for (const sc of Scenes.list) items.push({ z: W.depth(sc.z), f: () => { const p = W.P(sc.x, 0, sc.z); if (p.x < -300 || p.x > cam.W + 300) return; shadow(sc.x - 0.2, sc.z, 1.6, 0.2); ctx.save(); ctx.translate(p.x, p.y); ctx.scale(p.k * 0.95, p.k * 0.95); sc.draw(ctx, W.time); ctx.restore(); } });
     for (const [x, z] of [[-4.9, -4.9], [4.9, -4.9], [-4.9, 4.9], [4.9, 4.9]]) items.push({ z: W.depth(z), f: () => drawTorch(x, z) });
     items.sort((a, b) => a.z - b.z);
     return items;
@@ -573,10 +602,13 @@
 
   function frame(ts) {
     requestAnimationFrame(frame);
-    const dt = Math.min(0.05, (ts - last) / 1000 || 0.016) * W.speed; last = ts;
+    const dt = Math.min(0.05, (ts - last) / 1000 || 0.016) * W.speed * (W.skip ? 2.6 : 1); last = ts;
     W.time += dt;
-    { const raw = (ts - (W._lt || ts)) / 1000; W._lt = ts; if (raw > 0 && raw < 0.5) { W._ema = (W._ema || 0.016) * 0.95 + raw * 0.05; W._n = (W._n || 0) + 1; if (W._n > 120 && W._ema > 0.026 && W.q > 0) { W.q--; S.setQuality(W.q ? 1 : 0); W._n = 0; W._ema = 0.016; } } }
+    { const raw = (ts - (W._lt || ts)) / 1000; W._lt = ts;
+      if (W.autoQ && raw > 0 && raw < 0.5 && !document.hidden) { W._ema = (W._ema || 0.016) * 0.93 + raw * 0.07; W._n = (W._n || 0) + 1;
+        const lim = W.fpsCap ? 0.043 : 0.027; if (W._n > 90 && W._ema > lim && W.q > 0) { W.setQ(W.q - 1); W._n = 0; W._ema = 0.016; } } }
     updateTweens(dt); updateParts(dt); updateWanderers(dt);
+    if (root_Scenes() && !document.hidden && W.q >= 1) for (const sc of Scenes.list) sc.tick(dt, W);
     { const kf = 1 - Math.exp(-6 * Math.min(0.05, dt)); cam.zoom += (cam.tz - cam.zoom) * kf; cam.cx += (cam.tcx - cam.cx) * kf; cam.cy += (cam.tcy - cam.cy) * kf; cam.F = cam.F0 * cam.zoom; }
     for (const e of W.pieces.concat(W.bodies)) {
       if (e.mv > 0) e.wp += dt * 14;
@@ -590,6 +622,8 @@
     if (W.cheerT > 0) { W.cheerT -= dt; for (const c of W.crowd) c.cheer = 1; } else for (const c of W.crowd) c.cheer = 0;
     if (W.shake > 0) W.shake = Math.max(0, W.shake - dt * 2);
     if (W.onTick) W.onTick(dt);
+    const gap = W.menuMode ? 50 : W.fpsCap ? 1000 / W.fpsCap - 3 : 0;
+    if (gap && ts - (W._lr || 0) < gap) return; W._lr = ts;
     render();
   }
 
@@ -597,12 +631,15 @@
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     if (W.shake > 0) ctx.translate(rnd(-1, 1) * W.shake * 8, rnd(-1, 1) * W.shake * 8);
     const hz = W.P(0, 0, W.flip ? 11 : -11), horizonY = hz.y;
-    ctx.fillStyle = '#4a6eb0'; ctx.fillRect(0, 0, cam.W, cam.H);
-    if (horizonY > 24) drawSky(horizonY);
-    if (horizonY + hz.k * 0.5 > 0) drawWall(horizonY, hz.k);
-    drawGround(Math.max(0, Math.min(horizonY, cam.H - 4)));
-    if (W.fog > 0) { /* kezdő köd az alján */ }
-    drawBoard();
+    const ck = [cam.W, cam.H, dpr, W.flip ? 1 : 0, Math.round(cam.cx * 2), Math.round(cam.cy * 2), Math.round(cam.F * 2)].join('|');
+    layer('bg', ck, () => {
+      ctx.fillStyle = '#4a6eb0'; ctx.fillRect(0, 0, cam.W, cam.H);
+      if (horizonY > 24) drawSky(horizonY);
+      if (horizonY + hz.k * 0.5 > 0) drawWall(horizonY, hz.k);
+      drawGround(Math.max(0, Math.min(horizonY, cam.H - 4)));
+    }, W.q >= 2 ? 0.2 : 2.5);
+    layer('board', ck + '|' + W.themes.w.id + W.themes.b.id, drawBoardBase);
+    drawBoardDyn();
     for (const it of sortedItems()) it.f();
     drawMarkers();
     if (W.dragonFx) {
@@ -619,6 +656,9 @@
     drawParts();
     if (W.fog > 0) { ctx.fillStyle = `rgba(80,140,60,${W.fog * 0.28})`; ctx.fillRect(-20, -20, cam.W + 40, cam.H + 40); }
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    layer('ovl', cam.W + 'x' + cam.H + 'x' + dpr, drawOverlay);
+  }
+  function drawOverlay() {
     // kék kódex-keret arany csillagokkal (mint a Manesse-lapon)
     { const bw = Math.max(14, cam.W * 0.045); const bg = ctx.createLinearGradient(0, 0, bw, 0); bg.addColorStop(0, '#2c64a8'); bg.addColorStop(1, '#4b8ccc');
       for (const side of [0, 1]) {
@@ -629,10 +669,11 @@
         ctx.restore();
       } }
     // fény + vignetta
-    const vk = cam.W + 'x' + cam.H; if (vigKey !== vk) { vigKey = vk; vigG = ctx.createRadialGradient(cam.W / 2, cam.H * 0.48, Math.min(cam.W, cam.H) * 0.45, cam.W / 2, cam.H * 0.48, Math.max(cam.W, cam.H) * 0.78); vigG.addColorStop(0, 'rgba(30,15,5,0)'); vigG.addColorStop(1, 'rgba(25,10,20,.5)'); }
+    { vigG = ctx.createRadialGradient(cam.W / 2, cam.H * 0.48, Math.min(cam.W, cam.H) * 0.45, cam.W / 2, cam.H * 0.48, Math.max(cam.W, cam.H) * 0.78); vigG.addColorStop(0, 'rgba(30,15,5,0)'); vigG.addColorStop(1, 'rgba(25,10,20,.5)'); }
     ctx.fillStyle = vigG; ctx.fillRect(0, 0, cam.W, cam.H);
-    if (W.q > 1) { const lg = ctx.createLinearGradient(0, 0, cam.W, cam.H * 0.8); lg.addColorStop(0, 'rgba(255,225,150,.30)'); lg.addColorStop(0.5, 'rgba(255,255,255,0)'); lg.addColorStop(1, 'rgba(40,50,120,.22)'); ctx.save(); ctx.globalCompositeOperation = 'soft-light'; ctx.fillStyle = lg; ctx.fillRect(0, 0, cam.W, cam.H); ctx.restore(); }
+    { const lg = ctx.createLinearGradient(0, 0, cam.W, cam.H * 0.8); lg.addColorStop(0, 'rgba(255,225,150,.14)'); lg.addColorStop(0.5, 'rgba(255,255,255,0)'); lg.addColorStop(1, 'rgba(40,50,120,.14)'); ctx.fillStyle = lg; ctx.fillRect(0, 0, cam.W, cam.H); }
   }
+
 
   /* ---------- Találat-teszt ---------- */
   function inQuad(px, py, pts) {
@@ -657,11 +698,15 @@
     }
     if (pref >= 0) return pref;
     // 2) bábu: a teljes rajzolt alak; egymást fedő bábuknál az nyer, amelyiknek van lépése (majd a közelebbi)
-    const cand = [];
+    const cand = [], pix = [];
     for (const e of W.pieces) {
       const f = W.P(e.x, 0, e.z), hh = S.HEIGHT[e.type] * f.k;
-      if (Math.abs(px - f.x) < f.k * 0.42 && py < f.y + f.k * 0.22 && py > f.y - hh) cand.push({ sq: e.sq, y: f.y });
+      if (Math.abs(px - f.x) < f.k * 0.5 && py < f.y + f.k * 0.22 && py > f.y - hh) {
+        cand.push({ sq: e.sq, y: f.y });
+        if (Figures.ready && Figures.has(e.theme.id) && Figures.hit(e, (px - f.x) / f.k, (py - f.y) / f.k) === true) pix.push({ sq: e.sq, y: f.y });
+      }
     }
+    if (pix.length) { pix.sort((a, b) => b.y - a.y); const ok = W.selectable ? pix.find(c => W.selectable(c.sq)) : null; return (ok || pix[0]).sq; }   // a megérintett festett alak; fedésnél az, amelyiknek van lépése, egyébként a legelső
     cand.sort((a, b) => b.y - a.y);
     if (cand.length) { const ok = W.selectable ? cand.find(c => W.selectable(c.sq)) : null; return (ok || cand[0]).sq; }
     for (let sq = 0; sq < 64; sq++) if (inQuad(px, py, sqQuad(sq))) return sq;
@@ -670,9 +715,9 @@
 
   W.start = function (cv) {
     canvas = cv; ctx = cv.getContext('2d'); W.ctx = ctx;
-    buildAmbience(); W.resize();
-    window.addEventListener('resize', W.resize);
+    initQuality(); buildAmbience(); W.resize();
+    window.addEventListener('resize', () => W.resize());
     requestAnimationFrame(frame);
   };
-  W.getCanvas = () => canvas;
+  W.getCanvas = () => canvas; W._renderOnce = () => render();
 })(window);

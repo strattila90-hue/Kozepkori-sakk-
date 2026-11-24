@@ -93,6 +93,20 @@
     ctx.restore();
     return true;
   };
+  /* képpontos találat: a bábu festett alakjának átlátszatlan pontjára esik-e a (dx,dy) pont (egység a talpponthoz képest, y felfelé negatív) */
+  const masks = {};
+  function mask(k, im) {
+    if (masks[k]) return masks[k]; const W_ = 56, H_ = Math.max(8, Math.round(W_ * im.height / im.width));
+    const c = document.createElement('canvas'); c.width = W_; c.height = H_; const g = c.getContext('2d', { willReadFrequently: true }); g.drawImage(im, 0, 0, W_, H_);
+    try { return (masks[k] = { w: W_, h: H_, d: g.getImageData(0, 0, W_, H_).data }); } catch (e) { return (masks[k] = null); }
+  }
+  F.hit = function (e, dx, dy) {
+    const vw = view(e), k = key(e.type, vw.v, e.theme.id), im = imgs[k]; if (!im) return null;
+    const h = HEIGHT[e.type], w = im.width * h / im.height; let u = (dx + w / 2) / w; const v = (dy + h) / h;
+    if (u < 0 || u > 1 || v < 0 || v > 1) return false; if (vw.mirror) u = 1 - u;
+    const m = mask(k, im); if (!m) return null; const px = Math.min(m.w - 1, (u * m.w) | 0), py = Math.min(m.h - 1, (v * m.h) | 0);
+    return m.d[(py * m.w + px) * 4 + 3] > 40;
+  };
   root.Figures = F;
 })(window);
 

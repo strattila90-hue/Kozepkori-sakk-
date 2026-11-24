@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Az eredeti festett figurák (assets/src/*.jpg) feldolgozása játék-sprite-okká:
 háttér eltávolítása, kivágás, kicsinyítés, 4 seregszínű változat (fehér, fekete, vörös, arany) -> assets/figs/*.webp"""
-import glob, json, os
+import glob, json, os, sys
 import numpy as np
 from PIL import Image, ImageFilter
 
@@ -103,10 +103,17 @@ def tint(img, army, ptype):
 def main():
     os.makedirs(OUT, exist_ok=True); meta = {}
     EX = {'x_castle': (None, 420), 'x_tavern': (None, 420), 'x_pigfarm': (None, 360), 'x_crowd1': (0.755, 360), 'x_crowd2': (0.69, 360), 'x_crowd4': (0.765, 360)}
-    import sys
+
     for f in ([] if 'figs' in sys.argv else sorted(glob.glob(os.path.join(SRC, 'x_*.jpg')))):
         key = os.path.basename(f)[:-4]; cy, hh = EX.get(key, (None, 420 if 'dragon' in key else 320))
-        im = cut(f, hh, cy); im.save(os.path.join(OUT, key + '.webp'), 'WEBP', quality=84, method=6); meta[key] = {'w': im.width, 'h': im.height}; print(key, im.size)
+        if len(sys.argv) > 1 and sys.argv[1] not in ('figs',) and sys.argv[1] not in key: continue
+        im = cut(f, hh, cy)
+        if 'crowd' in key:  # a lábak közti fehér kitöltés: az alsó 45%-ban minden közel-fehér átlátszó, a perem lágy
+            a = np.array(im).astype(np.float32); H_ = a.shape[0]; r0 = int(H_ * 0.52)
+            mn = a[r0:, :, :3].min(axis=2); k = np.clip((mn - 205) / 40.0, 0, 1)
+            a[r0:, :, 3] = a[r0:, :, 3] * (1 - k)
+            im = Image.fromarray(a.astype(np.uint8), 'RGBA')
+        im.save(os.path.join(OUT, key + '.webp'), 'WEBP', quality=84, method=6); meta[key] = {'w': im.width, 'h': im.height}; print(key, im.size)
     for f in sorted(glob.glob(os.path.join(SRC, '[A-Z]_*.jpg'))):
         key = os.path.basename(f)[:-4]; ptype, view = key.split('_')
         base = cut(f); meta[key] = {'w': base.width, 'h': base.height}

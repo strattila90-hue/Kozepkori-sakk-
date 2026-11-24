@@ -47,6 +47,10 @@
     execution: ['Nincs kegyelem!', 'Le a fejjel!', 'Szegény Yorick...', 'Még egyet! Még egyet!', 'Hajrá, hajrá, bárd!'],
     plague: ['Pestis...', 'Rosszul vagyok...', 'Én még nem vagyok halott!', 'Hozzátok a halottakat!', 'Bleeee!'],
     castle: ['Vár, hé!', 'Falak közé!', 'Átugrok, átugrok!'],
+    butcher: ['Ma vacsorára friss kolbász!', 'Hozzátok a sót, a májat meg a vödröt!', 'Nem a te malacod, nem a te bajod!', 'Csak egy horzsolás volt!', 'Egy fej le, a többi marad!', 'Nyugi malac, hamar megleszünk.', 'A vér is jó lesz hurkának!'],
+    pig: ['Röff! Röff!', 'Visííí!', 'Én még nem vagyok sonka!', 'Segítség, tisztelt közönség!', 'Nem akarok kolbász lenni!'],
+    prisoner: ['Nem én voltam, az anyósom volt!', 'Boszorkány? Hát a szomszédom is az!', 'Mondd meg a feleségemnek, hogy a répák a pincében vannak!', 'Hagyjatok, jó ember vagyok!', 'Au, az orrom, az orrom!', 'Egy kis kegyelmet, uram!', 'Hozzátok a halottakat!'],
+    torturer: ['Vallj, te rühes!', 'Beszélj, te sátánfattya!', 'Még egy kicsit, és mindent elmondasz!', 'A parázs már pirosodik!', 'Nem fáj az, csak csiklandoz!', 'Kinek a pénze volt a zsákban?'],
   };
   const last = {};
   root.L = {

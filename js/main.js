@@ -11,7 +11,7 @@
   window.UI = {
     toast(t, cls) { const el = $('toast'); el.textContent = t; el.className = 'show ' + (cls || ''); clearTimeout(toastTimer); toastTimer = setTimeout(() => { el.className = ''; }, 1900); },
   };
-  const show = id => { for (const s of ['menu', 'lobby', 'promo', 'result']) $(s).classList.toggle('hidden', s !== id); };
+  const show = id => { for (const s of ['menu', 'lobby', 'promo', 'result']) $(s).classList.toggle('hidden', s !== id); W.menuMode = id === 'menu' || id === 'lobby'; };
   const hideAll = () => show(null);
 
   /* ---------- QR, verzió, telepítés ---------- */
@@ -23,7 +23,7 @@
       for (let r = 0; r < n; r++) for (let c = 0; c < n; c++) if (qr.isDark(r, c)) g.fillRect(off + c * px, off + r * px, px, px);
     } catch (e) { console.warn('QR', e); }
   }
-  const APP_V = '0.9.0'; let deferredInstall = null, swReg = null, newWorker = null;
+  const APP_V = '0.9.1'; let deferredInstall = null, swReg = null, newWorker = null;
   const isStandalone = () => window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone;
   function showUpdateBanner(txt) {
     if ($('updBanner')) return; const d = document.createElement('div'); d.id = 'updBanner'; d.innerHTML = '<span></span><button>Betöltöm!</button>'; d.firstChild.textContent = txt; d.lastChild.onclick = applyUpdate; document.body.appendChild(d);
@@ -74,6 +74,7 @@
     if (ses && Net.available()) { try { const s = JSON.parse(ses); $('btnResume').textContent = 'Visszatérés a várba (' + s.code + ')'; $('btnResume').classList.remove('hidden'); $('btnResume').onclick = () => joinOnline(s.code); } catch (e) { /* hibás */ } }
     $('btnCreate').onclick = createOnline; $('btnJoin').onclick = () => joinOnline($('code').value);
     $('btnBot').onclick = () => startBot(+$('botLevel').value); $('btnLocal').onclick = startLocal;
+    $('perfSeg').querySelectorAll('button').forEach(b => { b.classList.toggle('on', b.dataset.v === W.perfMode); b.onclick = () => { W.setPerf(b.dataset.v); $('perfSeg').querySelectorAll('button').forEach(x => x.classList.toggle('on', x === b)); }; });
     $('optFast').onchange = e => { W.speed = e.target.checked ? 1.7 : 1; };
     $('btnCopy').onclick = async () => { try { await navigator.clipboard.writeText(G.code); UI.toast('Jel lemásolva!'); } catch (e) { UI.toast(G.code); } };
     $('btnShare').onclick = async () => {
@@ -104,7 +105,7 @@
     const bottom = opts.mySide || 'w', top = bottom === 'w' ? 'b' : 'w';
     $('meName').textContent = opts.names[bottom]; $('oppName').textContent = opts.names[top];
     $('meSw').style.background = S.THEMES[opts.themeIds[bottom]].hex; $('oppSw').style.background = S.THEMES[opts.themeIds[top]].hex;
-    $('bDraw').classList.toggle('hidden', opts.mode !== 'online');
+    $('bDraw').classList.toggle('hidden', opts.mode !== 'online'); $('bUndo').classList.toggle('hidden', opts.mode === 'online');
     $('bFlip').classList.toggle('hidden', opts.mode !== 'local');
     hideAll(); $('hud').classList.remove('hidden'); updateHud();
     SFX.init(); SFX.bell();
@@ -197,8 +198,8 @@
     if (!m) { console.warn('érvénytelen lépés', o); if (G.mode === 'online' && G.room) resync(); return; }
     G.sel = -1; W.hl.sel = -1; W.hl.targets = [];
     if (local && G.mode === 'online') Net.sendMove(G.code, G.chess.moveList.length - 1, G.chess.moveList[G.chess.moveList.length - 1]).catch(e => { console.error(e); UI.toast('A lépést nem sikerült elküldeni', 'bad'); });
-    updateHud();
-    await W.playMove(m);
+    updateHud(); $('hint').textContent = 'Koppints a képre: gyorsabb a mészárlás!';
+    await W.playMove(m); W.skip = false;
     updateHud();
     if (m.status !== 'playing') await finish({ type: m.status, winner: m.status === 'checkmate' ? m.color : null });
     else if (G.mode === 'bot' && G.chess.turn !== G.mySide) setTimeout(botMove, 450);
@@ -270,7 +271,10 @@
     W.turn = G.over ? null : G.chess.turn;
     const bottom = G.mySide || 'w'; $('mePlate').classList.toggle('active', !G.over && G.chess.turn === bottom); $('oppPlate').classList.toggle('active', !G.over && G.chess.turn !== bottom);
     if (!G.over) { const th = S.THEMES[G.themeIds[G.chess.turn]]; t.innerHTML = '<span class="sw" style="background:' + th.hex + ';margin-right:8px"></span>' + t.textContent; t.style.borderColor = th.hex; }
-    $('oppStat').textContent = ''; $('meStat').textContent = '';
+    { const start = { P: 8, N: 2, B: 2, R: 2, Q: 1 }, nm = { P: 'gyalog', N: 'huszár', B: 'futó', R: 'bástya', Q: 'királynő' }, cnt = { w: {}, b: {} };
+      for (const ch of G.chess.board) if (ch && ch.toUpperCase() !== 'K') { const c = Chess.colorOf(ch), t = ch.toUpperCase(); cnt[c][t] = (cnt[c][t] || 0) + 1; }
+      const lost = c => Object.keys(start).map(t => { const n = start[t] - (cnt[c][t] || 0); return n > 0 ? n + ' ' + nm[t] : ''; }).filter(Boolean).join(', ');
+      const bottom = G.mySide || 'w', top = bottom === 'w' ? 'b' : 'w'; $('meStat').textContent = lost(bottom) ? 'elesett: ' + lost(bottom) : ''; $('oppStat').textContent = lost(top) ? 'elesett: ' + lost(top) : ''; }
     W.hl.check = G.chess.inCheck() ? G.chess.kingSq(G.chess.turn) : -1;
     let hint = ''; const hel = $('hint');
     if (G.over) hint = ''; else if (G.mode === 'online' && !(G.room && G.room.guestId)) hint = 'Várunk az ellenfélre…';
@@ -286,7 +290,7 @@
     const ptrs = new Map(); let pinch = null, moved = 0, tapOk = true, lastTap = 0;
     const pos = e => { const r = c.getBoundingClientRect(); return { x: e.clientX - r.left, y: e.clientY - r.top }; };
     c.addEventListener('pointerdown', e => {
-      SFX.init(); c.setPointerCapture && c.setPointerCapture(e.pointerId); const p = pos(e); ptrs.set(e.pointerId, p);
+      SFX.init(); if (W.busy && !W.skip) { W.skip = true; UI.toast('Gyorsabb mészárlás!'); } c.setPointerCapture && c.setPointerCapture(e.pointerId); const p = pos(e); ptrs.set(e.pointerId, p);
       if (ptrs.size === 1) { moved = 0; tapOk = true; }
       if (ptrs.size === 2) { const [a, b] = [...ptrs.values()]; pinch = { d: Math.hypot(a.x - b.x, a.y - b.y) || 1 }; tapOk = false; }
     });
@@ -309,7 +313,7 @@
     c.addEventListener('wheel', e => { e.preventDefault(); const p = pos(e); W.zoomAt(e.deltaY < 0 ? 1.15 : 1 / 1.15, p.x, p.y); }, { passive: false });
     $('bZoom').onclick = () => W.cycleZoom();
     $('bFart').onclick = () => emote('fart'); $('bNose').onclick = () => emote('nose');
-    $('bFlip').onclick = () => { W.setFlip(!W.flip); };
+    $('bUndo').onclick = takeback; $('bFlip').onclick = () => { W.setFlip(!W.flip); };
     $('bMute').onclick = () => { SFX.setMuted(!SFX.isMuted()); $('bMute').classList.toggle('off', SFX.isMuted()); };
     $('bResign').onclick = async () => {
       if (G.over || !G.mode || !confirm('Biztosan megadod magad?')) return;
@@ -325,6 +329,14 @@
       } catch (e) { UI.toast('Hiba', 'bad'); }
     };
   }
+  function takeback() {
+    if (!G.mode || G.mode === 'online' || W.busy || G.pumping || G.over) { UI.toast(G.mode === 'online' ? 'Online nincs visszalépés, uram.' : 'Várj, amíg véget ér a mészárlás!'); return; }
+    const list = G.chess.moveList.slice(); if (!list.length) return;
+    const drop = (G.mode === 'bot' && G.chess.turn === G.mySide) ? 2 : 1, keep = list.slice(0, Math.max(0, list.length - drop));
+    G.gen++; G.queue = []; const g = new Chess(); for (const u of keep) g.move({ from: u.slice(0, 2), to: u.slice(2, 4), promo: u[4] || null });
+    G.chess = g; G.sel = -1; W.hl.arrow = null; W.hl.last = [-1, -1]; W.setup(g); updateHud(); UI.toast('Az idő kereke visszaforog…'); SFX.bell();
+    if (G.mode === 'bot' && g.turn !== G.mySide) setTimeout(botMove, 600);
+  }
   let lastEm = 0;
   function emote(kind) {
     const now = Date.now(); if (now - lastEm < 900) return; lastEm = now; SFX.init();
@@ -335,7 +347,7 @@
 
   /* ---------- Indulás ---------- */
   window.addEventListener('DOMContentLoaded', () => {
-    W.start($('c')); Figures.loadExtras(); initMenu(); initInput(); initPwa();
+    W.menuMode = true; W.start($('c')); Figures.loadExtras(); initMenu(); initInput(); initPwa();
     G.chess = new Chess(); W.setup(G.chess); W.idleOn = true;
     window.__G = G; // hibakereséshez
     document.addEventListener('visibilitychange', () => { if (!document.hidden) SFX.init(); });
