@@ -118,6 +118,29 @@ let pass = 0, fail = 0; const ok = (n, c, info) => { c ? pass++ : fail++; consol
     ok('a Lant gomb ki-be kapcsolja a zenét', mus === false && (await P.evaluate(() => SFX.musicOn())) === true);
     await c4.close();
   }
+  console.log('Automatikus frissítés');
+  {
+    let srvVer = '9.9.9';
+    const c5 = await b.newContext({ viewport: { width: 430, height: 900 } });
+    await c5.route('**/version.json*', r => r.fulfill({ contentType: 'application/json', body: JSON.stringify({ version: srvVer, name: 'teszt' }) }));
+    await c5.addInitScript(() => { window.__applied = 0; window.__applyUpdateHook = () => { window.__applied++; }; });
+    const M = await mk(c5); await M.waitForTimeout(2500);
+    ok('menüben az új kiadás magától betöltődik', (await M.evaluate(() => window.__applied)) === 1);
+    await M.close();
+    const c6 = await b.newContext({ viewport: { width: 430, height: 900 } }); const cur = JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'version.json'), 'utf8')).version; srvVer = cur;
+    await c6.route('**/version.json*', r => r.fulfill({ contentType: 'application/json', body: JSON.stringify({ version: srvVer, name: 'teszt' }) }));
+    await c6.addInitScript(() => { window.__applied = 0; window.__applyUpdateHook = () => { window.__applied++; }; });
+    const B2 = await mk(c6); B2.on('dialog', d => d.accept()); await B2.waitForTimeout(800);
+    ok('azonos verziónál nincs frissítés', (await B2.evaluate(() => window.__applied)) === 0);
+    await B2.click('#btnLocal'); await B2.waitForTimeout(600); srvVer = '9.9.9';
+    await B2.evaluate(() => window.__checkUpdate(false)); await B2.waitForTimeout(2200);
+    ok('csata közben nem frissít, csak jelzi', (await B2.evaluate(() => window.__applied)) === 0 && !!(await B2.$('#updBanner')));
+    await B2.click('#bMenu'); await B2.waitForTimeout(2200);
+    ok('a csata után (menübe lépve) magától betölti', (await B2.evaluate(() => window.__applied)) === 1);
+    await B2.evaluate(() => window.__checkUpdate(false)); await B2.waitForTimeout(2200);
+    ok('hurokvédelem: ugyanarra a verzióra nem tölt újra azonnal', (await B2.evaluate(() => window.__applied)) === 1);
+    await c5.close(); await c6.close();
+  }
   ok('nincs oldal-hiba a teszt során', errs.length === 0, errs.slice(0, 3));
   await b.close(); srv.close(); console.log(`\nFüsttesztek: ${pass} sikeres, ${fail} hibás`); process.exit(fail ? 1 : 0);
 })();
