@@ -5,7 +5,7 @@
   let fs = null, db = null;
   const ALPHA = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
   let id = null;
-  try { id = localStorage.getItem('ps_id'); if (!id) { id = Math.random().toString(36).slice(2) + Date.now().toString(36); localStorage.setItem('ps_id', id); } } catch (e) { id = Math.random().toString(36).slice(2); }
+  id = Util.store.get('ps_id'); if (!id) { id = Math.random().toString(36).slice(2) + Date.now().toString(36); Util.store.set('ps_id', id); }
 
   const Net = {
     id,
@@ -26,7 +26,7 @@
         const code = Net.genCode(), r = Net.ref(code);
         const snap = await fs.getDoc(r);
         if (snap.exists()) continue;
-        await fs.setDoc(r, { code, created: Date.now(), updated: Date.now(), status: 'waiting', hostId: id, hostName: name, hostTheme: theme, hostSide: side,
+        await fs.setDoc(r, { code, created: Date.now(), updated: Date.now(), status: 'waiting', hostId: id, hostName: Proto.cleanName(name, 'Gazda'), hostTheme: Proto.cleanTheme(theme, 'white'), hostSide: Proto.cleanSide(side, 'w'),
           guestId: null, guestName: null, guestTheme: null, moves: [], result: null, draw: null, emote: null });
         return code;
       }
@@ -43,8 +43,8 @@
         if (d.guestId === id) return { role: 'guest', data: d, code };
         if (d.guestId) throw new Error('Ez a szoba már tele van.');
         if (d.result) throw new Error('Ez a játszma már véget ért.');
-        const th = theme === d.hostTheme ? ['white', 'black', 'red', 'gold'].find(t => t !== d.hostTheme) : theme;
-        tx.update(r, { guestId: id, guestName: name, guestTheme: th, status: 'playing', updated: Date.now() });
+        const want = Proto.cleanTheme(theme, 'black'), th = want === d.hostTheme ? Proto.THEMES.find(t => t !== d.hostTheme) : want;
+        tx.update(r, { guestId: id, guestName: Proto.cleanName(name, 'Vendég'), guestTheme: th, status: 'playing', updated: Date.now() });
         return { role: 'guest', data: Object.assign({}, d, { guestId: id, guestName: name, guestTheme: th, status: 'playing' }), code };
       });
     },

@@ -26,6 +26,7 @@
     <symbol id="i-scroll" viewBox="0 0 32 32"><g stroke="#2b1b10" stroke-width="1.6" stroke-linejoin="round" stroke-linecap="round"><path d="M8 5h17v18a3 3 0 0 1-3 3H9a3 3 0 0 1-3-3v-2h4V8a3 3 0 0 0-2-3z" fill="#efe3c0"/><path d="M13 11h8M13 15h8M13 19h6" fill="none"/></g></symbol>
     <symbol id="i-lens" viewBox="0 0 32 32"><g stroke="#2b1b10" stroke-width="1.7" stroke-linecap="round" fill="none"><circle cx="13" cy="13" r="8" fill="#e8f0f8"/><path d="M19 19l9 9" stroke-width="3.4"/><path d="M13 9v8M9 13h8"/></g></symbol>
     <symbol id="i-undo" viewBox="0 0 32 32"><g stroke="#2b1b10" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" fill="none"><path d="M10 11H21a6 6 0 0 1 0 12H12" /><path d="M14 5l-6 6 6 6" fill="#d9a935"/></g></symbol>
+    <symbol id="i-share" viewBox="0 0 32 32"><g stroke="#2b1b10" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="16" r="4" fill="#d9a935"/><circle cx="24" cy="7" r="4" fill="#b8322a"/><circle cx="24" cy="25" r="4" fill="#3b5ea6"/><path d="M11.5 14l9-5M11.5 18l9 5" fill="none"/></g></symbol>
     <symbol id="i-sword" viewBox="0 0 32 32"><g stroke="#2b1b10" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"><path d="M25 3l4 4-13 13-4-4z" fill="#cfd5dd"/><path d="M10 14l8 8M6 26l5-5" fill="none" stroke-width="2.4"/><path d="M12 22l-3 3-3-1 1-3z" fill="#8a5a2b"/><rect x="8.5" y="15" width="9" height="3" transform="rotate(45 13 16.5)" fill="#d9a935"/></g></symbol>
     <symbol id="i-key" viewBox="0 0 32 32"><g stroke="#2b1b10" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"><circle cx="11" cy="11" r="6" fill="#d9a935"/><circle cx="11" cy="11" r="2" fill="#efe3c0"/><path d="M15 15l12 12M22 22l3-3M25 25l3-3" fill="none" stroke-width="2.6"/></g></symbol>
     <symbol id="i-jester" viewBox="0 0 32 32"><g stroke="#2b1b10" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"><path d="M5 14L3 4l8 5 5-6 5 6 8-5-2 10z" fill="#b8322a"/><circle cx="3" cy="4" r="2" fill="#d9a935"/><circle cx="16" cy="3" r="2" fill="#d9a935"/><circle cx="29" cy="4" r="2" fill="#d9a935"/><ellipse cx="16" cy="21" rx="8.5" ry="8" fill="#f3dfc3"/><path d="M12 20h.1M20 20h.1M12 25q4 3 8 0" fill="none" stroke-width="2"/></g></symbol>
@@ -33,13 +34,13 @@
   </defs>
 </svg>
 
-<canvas id="c"></canvas>
-<div id="toast"></div>
+<canvas id="c" role="img" aria-label="Sakktábla a középkori udvarban: koppints a bábukra és a zöld mezőkre a lépéshez"></canvas>
+<div id="toast" role="status" aria-live="assertive"></div>
 
 <div id="hud" class="hidden">
   <div class="plate top" id="oppPlate"><span class="sw" id="oppSw"></span><b id="oppName">Ellenfél</b><i id="oppStat"></i></div>
-  <div id="turnBadge"></div>
-  <div id="hint"></div>
+  <div id="turnBadge" role="status" aria-live="polite"></div>
+  <div id="hint" role="status" aria-live="polite"></div>
   <div class="bottom">
     <div class="plate" id="mePlate"><span class="sw" id="meSw"></span><b id="meName">Te</b><i id="meStat"></i></div>
     <div class="btns">
@@ -79,6 +80,7 @@
     <div class="seg" id="perfSeg"><button data-v="auto" class="on">Magától</button><button data-v="low">Kíméletes</button><button data-v="high">Pazar</button></div>
     <div class="opts"><label><input type="checkbox" id="optFast"> Sietős mészárlás (gyors mozgás)</label></div>
     <div class="rule"></div>
+    <button class="big" id="btnShareGame"><svg class="ic"><use href="#i-share"/></svg>Hírnököt küldök a barátaimnak</button>
     <button class="big alt hidden" id="btnInstall">Vidd haza a várat (telepítés)</button>
     <div id="iosNote" class="note hidden">Telefonon: koppints a <b>Megosztás</b> gombra, majd <b>„Főképernyőhöz adás"</b>. Így egy kattintással indul, és hálózat nélkül is megy a bolond elleni viadal.</div>
     <button class="big alt" id="btnUpdate">Hírnököt küldök: van-e új kiadás?</button>
@@ -105,11 +107,14 @@
   <div id="resTitle" class="logo"><span class="word">Vége</span></div>
   <div id="resSub" class="sub"></div>
   <button class="big" id="btnAgain">Még egy csata!</button>
+  <button class="big" id="btnShareRes">Dicsekedj a barátaidnak</button>
   <button class="big alt" id="btnToMenu">Vissza a várba</button>
 </div></div>
 
 <script src="firebase-config.js"></script>
+<script src="js/util.js"></script>
 <script src="js/chess.js"></script>
+<script src="js/protocol.js"></script>
 <script src="js/audio.js"></script>
 <script src="js/sprites.js"></script>
 <script src="js/figures.js"></script>

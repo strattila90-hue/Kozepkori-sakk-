@@ -6,7 +6,7 @@
   const sleep = ms => new Promise(r => setTimeout(r, ms));
   const G = { mode: null, chess: null, mySide: null, level: 2, code: null, role: null, unsub: null, over: false, queue: [], pumping: false, sel: -1, room: null, lastEmote: 0, themeIds: { w: 'white', b: 'black' }, names: { w: 'Világos', b: 'Sötét' }, gen: 0 };
   let myTheme = 'white', hostSide = 'w', botSide = 'w', toastTimer = null;
-  const store = { get: k => { try { return localStorage.getItem(k); } catch (e) { return null; } }, set: (k, v) => { try { localStorage.setItem(k, v); } catch (e) { /* nincs tár */ } } };
+  const store = Util.store;
 
   window.UI = {
     toast(t, cls) { const el = $('toast'); el.textContent = t; el.className = 'show ' + (cls || ''); clearTimeout(toastTimer); toastTimer = setTimeout(() => { el.className = ''; }, 1900); },
@@ -16,6 +16,15 @@
 
   /* ---------- QR, verzió, telepítés ---------- */
   const roomUrl = code => location.origin + location.pathname.replace(/index\.html$/, '') + '?room=' + code;
+  const baseUrl = () => location.origin + location.pathname.replace(/index\.html$/, '');
+  /** Megosztás: a készülék saját megosztó lapja (ha van), különben a link vágólapra másolása. */
+  async function shareGame(text) {
+    const url = baseUrl();
+    try {
+      if (navigator.share) { await navigator.share({ title: 'Parasztsakk', text, url }); return; }
+      await navigator.clipboard.writeText(text + ' ' + url); UI.toast('Hírnök-levél a vágólapon!');
+    } catch (e) { if (e && e.name === 'AbortError') return; try { await navigator.clipboard.writeText(url); UI.toast('A link a vágólapon!'); } catch (_e) { UI.toast(url); } }
+  }
   function drawQR(code) {
     try {
       const qr = qrcode(0, 'M'); qr.addData(roomUrl(code)); qr.make(); const n = qr.getModuleCount(), cv = $('qrCanvas'), q = 4, px = Math.floor(cv.width / (n + 2 * q)), off = Math.floor((cv.width - px * n) / 2), g = cv.getContext('2d');
@@ -23,7 +32,7 @@
       for (let r = 0; r < n; r++) for (let c = 0; c < n; c++) if (qr.isDark(r, c)) g.fillRect(off + c * px, off + r * px, px, px);
     } catch (e) { console.warn('QR', e); }
   }
-  const APP_V = '0.9.2'; let deferredInstall = null, swReg = null, newWorker = null;
+  const APP_V = '0.9.6'; let deferredInstall = null, swReg = null, newWorker = null;
   const isStandalone = () => window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone;
   function showUpdateBanner(txt) {
     if ($('updBanner')) return; const d = document.createElement('div'); d.id = 'updBanner'; d.innerHTML = '<span></span><button>Betöltöm!</button>'; d.firstChild.textContent = txt; d.lastChild.onclick = applyUpdate; document.body.appendChild(d);
@@ -81,12 +90,14 @@
       const url = roomUrl(G.code);
       try { if (navigator.share) await navigator.share({ title: 'Parasztsakk', text: 'Gyere sakkozni, paraszt! Kód: ' + G.code, url }); else { await navigator.clipboard.writeText(url); UI.toast('Hírnök-levél másolva!'); } } catch (e) { /* mégse */ }
     };
+    $('btnShareGame').onclick = () => shareGame('Parasztsakk – véres, büdös, szabályos sakk. Gyere játszani, paraszt!');
+    $('btnShareRes').onclick = () => shareGame(G.mySide && G.over ? 'Parasztsakk: ' + $('resTitle').textContent + ' Gyere, mérkőzz meg velem!' : 'Parasztsakk – gyere, mérkőzz meg velem!');
     $('btnLobbyCancel').onclick = toMenu; $('btnToMenu').onclick = toMenu; $('bMenu').onclick = () => { if (G.over || confirm('Elhagyod a csatamezőt?')) toMenu(); };
     $('btnAgain').onclick = () => { if (G.mode === 'bot') startBot(G.level); else if (G.mode === 'local') startLocal(); else toMenu(); };
   }
   function paintSw() { $('swatches').querySelectorAll('button').forEach(b => b.classList.toggle('on', b.dataset.id === myTheme)); }
   const FUNNY = ['Pocak Pista', 'Büdös Bence', 'Sáros Sanyi', 'Kövér Kata', 'Orrfúró Ödön', 'Mókus Jóska', 'Pukizó Pál', 'Rühes Rozi', 'Csorba Gyuri', 'Kecskepásztor Kelemen'];
-  const myName = () => { let n = $('name').value.trim(); if (!n) { n = FUNNY[Math.floor(Math.random() * FUNNY.length)]; $('name').value = n; } store.set('ps_name', n); return n; };
+  const myName = () => { let n = Proto.cleanName($('name').value, ''); if (!n) { n = FUNNY[Math.floor(Math.random() * FUNNY.length)]; $('name').value = n; } store.set('ps_name', n); return n; };
   const otherTheme = t => { const o = THEME_IDS.filter(x => x !== t); return o[Math.floor(Math.random() * o.length)]; };
 
   function toMenu() {
@@ -98,7 +109,7 @@
   /* ---------- Játék indítása ---------- */
   function begin(opts) {
     cleanup(opts.keepSub); G.mode = opts.mode; G.mySide = opts.mySide; G.names = opts.names; G.themeIds = opts.themeIds;
-    G.chess = new Chess(); G.over = false;
+    G.chess = new Chess(); G.over = false; G.warnedBad = false;
     W.setFlip(opts.mySide === 'b');
     W.setThemes({ w: S.THEMES[opts.themeIds.w], b: S.THEMES[opts.themeIds.b] });
     W.setup(G.chess); W.idleOn = true; W.idleT = 2;
@@ -147,7 +158,9 @@
     if (G.unsub) G.unsub();
     G.unsub = Net.subscribe(code, onRoom, e => { console.error(e); UI.toast('A hírnök elvesztette a lovát', 'bad'); });
   }
-  function onRoom(d) {
+  function onRoom(raw) {
+    const d = Proto.parseRoom(raw);                    // a szoba bárki által írható: csak ellenőrzött adatot használunk
+    if (d.badMoves && !G.warnedBad) { G.warnedBad = true; UI.toast('Szabálytalan lépés érkezett – a játék csak az érvényes lépéseket veszi át', 'bad'); }
     G.room = d;
     const iAmHost = G.role === 'host';
     if (!G.mode && d.guestId) { // játék indul
@@ -160,7 +173,7 @@
       G.code = code; G.role = role; G.room = d;
       G.lastEmote = d.emote ? d.emote.n : 0; // a régi emote-okat ne játsszuk le
       if (d.moves.length) { // újracsatlakozás: a korábbi lépések animáció nélkül
-        for (const u of d.moves) G.chess.move({ from: u.slice(0, 2), to: u.slice(2, 4), promo: u[4] || null });
+        for (const u of d.moves) G.chess.move(Proto.parseMove(u));
         W.setup(G.chess); const lm = G.chess.stack[G.chess.stack.length - 1]; if (lm) W.hl.last = [lm.m.from, lm.m.to];
       }
     }
@@ -186,26 +199,46 @@
         while (W.busy && gen === G.gen) await sleep(60);
         if (gen !== G.gen) break;
         const q = G.queue.shift();
-        if (typeof q === 'string') await applyMove({ from: q.slice(0, 2), to: q.slice(2, 4), promo: q[4] || null }, false);
-        else if (q.result) await finish(q.result.type === 'resign' ? { type: 'resign', winner: q.result.loser === 'w' ? 'b' : 'w' } : { type: 'draw-agreed', winner: null });
+        try {
+          if (typeof q === 'string') { const p = Proto.parseMove(q); if (p) await applyMove(p, false); }
+          else if (q && q.result) await finish(q.result.type === 'resign' ? { type: 'resign', winner: q.result.loser === 'w' ? 'b' : 'w' } : { type: 'draw-agreed', winner: null });
+        } catch (e) { console.error('lépés feldolgozási hiba', e); W.busy = false; W.setup(G.chess); }   // egy hibás elem nem állíthatja meg a sort
       }
-    } finally { G.pumping = false; }
+    } finally {
+      G.pumping = false;
+      if (G.queue.length && gen !== G.gen) pump();     // közben új játék indult: annak sora ne maradjon állva
+    }
   }
   async function applyMove(o, local) {
     if (G.over) return;
     const m = G.chess.move(o);
     if (!m) { console.warn('érvénytelen lépés', o); if (G.mode === 'online' && G.room) resync(); return; }
     G.sel = -1; W.hl.sel = -1; W.hl.targets = [];
-    if (local && G.mode === 'online') Net.sendMove(G.code, G.chess.moveList.length - 1, G.chess.moveList[G.chess.moveList.length - 1]).catch(e => { console.error(e); UI.toast('A lépést nem sikerült elküldeni', 'bad'); });
+    if (local && G.mode === 'online') {
+      const idx = G.chess.moveList.length - 1;
+      Net.sendMove(G.code, idx, G.chess.moveList[idx])
+        .then(ok => { if (!ok) recoverFromServer('Az ellenfél közben lépett, az állás összeigazítva'); })      // a szerver elutasította: ne maradjon eltérő állás
+        .catch(e => { console.error(e); recoverFromServer('A lépést nem sikerült elküldeni, az állás összeigazítva'); });
+    }
     updateHud(); $('hint').textContent = 'Koppints a képre: gyorsabb a mészárlás!';
-    await W.playMove(m); W.skip = false;
+    try { await W.playMove(m); } catch (e) { console.error('animáció hiba', e); W.busy = false; W.setup(G.chess); }   // az állás akkor is előrelép, ha egy animáció elbukik
+    W.skip = false;
     updateHud();
     if (m.status !== 'playing') await finish({ type: m.status, winner: m.status === 'checkmate' ? m.color : null });
     else if (G.mode === 'bot' && G.chess.turn !== G.mySide) setTimeout(botMove, 450);
   }
-  function resync() { /* szinkronsérülés: újraépítés a szoba lépéseiből */
-    const d = G.room; const g = new Chess(); for (const u of d.moves) g.move({ from: u.slice(0, 2), to: u.slice(2, 4), promo: u[4] || null });
-    G.chess = g; W.setup(g); updateHud();
+  function resync() { /* szinkronsérülés: az állás újraépítése a szoba érvényes lépéseiből */
+    G.chess = Proto.replay(G.room.moves).chess; W.setup(G.chess);
+    const lm = G.chess.stack[G.chess.stack.length - 1]; if (lm) W.hl.last = [lm.m.from, lm.m.to];
+    updateHud();
+  }
+  async function recoverFromServer(msg) {
+    if (G.mode !== 'online' || !G.code) return; const gen = G.gen;
+    try {
+      const raw = await Net.get(G.code); if (!raw || gen !== G.gen) return;
+      while (W.busy && gen === G.gen) await sleep(60); if (gen !== G.gen) return;
+      G.room = Proto.parseRoom(raw); G.queue = []; resync(); UI.toast(msg, 'bad');
+    } catch (e) { console.error(e); }
   }
   async function botMove() {
     if (G.over || G.mode !== 'bot' || G.chess.turn === G.mySide) return;

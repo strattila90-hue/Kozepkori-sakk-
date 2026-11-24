@@ -1,4 +1,4 @@
-# Kód-audit és tesztelés – v0.9.2
+# Kód-audit és tesztelés
 
 Módszer: statikus elemzés (eslint), egység- és böngészős füsttesztek, automata véletlen-játszma (`test/fuzz.js`), szemrevételezés telefonméretű (430×900) képernyőn. Futtatás: `node test/run-all.js` (vagy `npm test`).
 
@@ -22,3 +22,33 @@ Talapzat nélküli, a saját lábukon álló bábuk (vékony seregszínű gyűr�
 4. **~500 soros kódból rajzolt tartalék-sprite** (`sprites.js`) csak a festett képek betöltéséig él; betöltőképernyővel kiváltható.
 5. **Valódi telefonos teljesítmény nincs mérve** (csak headless böngésző).
 6. **Hozzáférhetőség**: nincs képernyőolvasó-támogatás a vásznon.
+
+
+---
+
+## 2. kör – v0.9.5: online adatbiztonság és hibatűrés
+
+Módszer: kódolvasás a megbízhatatlan bemenetek (a szoba bárki által írható dokumentum) és a hibaágak mentén; minden javításhoz regressziós teszt, **amelyről megmutattuk, hogy a javítás nélküli kódon elbukik** (a teszt a javítás előtti `HEAD`-en futott: 5 teszt hibás, javítással 22/22 sikeres).
+
+| # | Súly | Hiba | Bizonyíték a javítás nélküli kódon | Javítás |
+|---|---|---|---|---|
+| 1 | magas | Az elutasított online lépés (`sendMove` → `false`) figyelmen kívül maradt: a helyi állás csendben eltért a szerverétől | teszt: 1 lépés, fekete jön (kellene: 0 lépés, világos) | a szerver állapotából újraépítés + üzenet |
+| 2 | magas | A szoba adatait nem ellenőrizte semmi: hamis téma (`S.THEMES[x]` → `undefined`) összeomlasztotta a játék indítását | `Cannot read properties of undefined (reading 'id')` | `js/protocol.js`: téma/oldal/név/lépés/eredmény/emote ellenőrzése |
+| 3 | magas | A lépésnek álcázott objektum (`{result: …}`) hamis játékeredményt tudott kiváltani, a rossz típusú elem `u.slice is not a function` hibát dobott | `u.slice is not a function` | csak `^[a-h][1-8][a-h][1-8][qrbn]?$` alakú lépés fogadható el |
+| 4 | közepes | Szabálytalan lépés újra és újra visszakerült a sorba minden szoba-frissítéskor | kódolvasás + teszt: nincs figyelmeztetés | az első szabálytalan lépésnél a lista csonkolva, egyszeri figyelmeztetés |
+| 5 | közepes | Animációs kivétel zárolt táblával megállította a játékot (`busy` örökre igaz) | `{"busy":true}` | `try/catch`: a tábla felszabadul, az állás újraépül |
+| 6 | közepes | A lépéssor egy hibás elemnél megállt; új játék közben az előző sor leállhatott | kódolvasás | elem-szintű hibakezelés, a sor újraindul |
+| 7 | alacsony | Korlátlan névhossz | teszt: 500 karakter | legfeljebb 14 karakter, vezérlőkarakter és `<>` nélkül |
+| 8 | alacsony | A `layers`/`shGrad` a használat után volt deklarálva (átrendezéskor csendes `ReferenceError`) | eslint `no-use-before-define` | feljebb vive |
+| 9 | alacsony | Háromszor másolt `localStorage`-segéd | – | `js/util.js` |
+| 10 | alacsony | Nincs képernyőolvasó-jelzés (vászon, értesítések) | statikus teszt | `role`/`aria-live` |
+| 11 | alacsony | A `fuzz` külső szervert várt, ezért magától elbukott | `ERR_CONNECTION_REFUSED` | `test/server.js`, egy parancs mindent futtat; útvonal-bejárás ellen védett |
+
+Eredmény: eslint (repó-konfig) **0 hiba, 0 figyelmeztetés**; egységtesztek **36/36**; füsttesztek **22/22**; hosszú véletlen-játszma lásd a kiadási jegyzetben.
+
+### Továbbra is nyitott (kockázat szerint)
+1. **Firestore-szabály** (közepes): bárki bármelyik szobát átírhatja, ezért csalni lehet (pl. az ellenfél nevében lépni). A kliens most ellenőrzi az adatot, de a védelem valódi forrása a szabály. Javasolt irány: `hostId` megváltoztathatatlan, a `moves` csak hozzáfűzhető, a `guestId` csak egyszer állítható. **Szabály-emulátor nélkül nem tudom tesztelni**, és egy rossz szabály megállítaná az online játékot, ezért nem módosítottam.
+2. **Valódi Firestore + valódi telefon** (közepes): az online játék és a teljesítmény csak szimulált háttérrel, headless böngészőben volt tesztelve.
+3. **`world.js` (~720 sor) és `fx.js` (~430 sor)** globális `W`-állapottal (alacsony, karbantarthatóság). Szétbontásuk nagy regressziókockázat; a tesztek most már fognák, de nem kezdtem bele.
+4. **Elkésett háttér-visszahívások** (alacsony, kozmetikai): új játék indításakor egy már ütemezett `setTimeout` (pl. hullaelhurcolás) még lefuthat.
+5. **Offline első indulás**: a festett képek futás közben gyorsítótárazódnak; a legelső offline indítás előtt egyszer játszani kell online.
