@@ -108,3 +108,63 @@ input,select{font-size:19px!important;color:#120a06!important}
 
 /* olvasható értesítés (a gót betű nehezen olvasható) */
 #toast{font:700 clamp(26px,7vw,52px)/1.1 "IM Fell English",Georgia,serif;-webkit-text-stroke:1.5px #1c1310}
+
+/* ===== v1.1: felület (parancssáv, vezényszó, krónika, menükártyák) ===== */
+#hud .bottom{left:24px;right:24px;gap:8px;align-items:stretch}
+#hud .bottom .plate{align-self:flex-start}
+.bar{pointer-events:auto;background:linear-gradient(180deg,rgba(43,27,16,.86),rgba(22,14,10,.92));border:2px solid #c9a03a;border-radius:14px;padding:6px;box-shadow:0 6px 18px rgba(0,0,0,.55),inset 0 1px 0 rgba(255,230,160,.25);-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px)}
+#hud .bar .btns{display:flex;gap:6px;flex-wrap:nowrap}
+#hud .bar .btns.more{display:none;flex-wrap:wrap;margin-top:6px;padding-top:6px;border-top:1px dashed rgba(217,169,53,.5)}
+#hud.moreOpen .bar .btns.more{display:flex;animation:fadein .2s}
+#hud .bar .btns button{flex:1 1 0;min-width:0;max-width:78px;width:auto;height:54px;border-radius:10px;border:2px solid #1c1310;outline:1px solid rgba(217,169,53,.7);outline-offset:-4px;background:linear-gradient(180deg,#fbeec4,#dcbc72);box-shadow:0 2px 0 #6b4a1a,0 4px 8px rgba(0,0,0,.4)}
+#hud .bar .btns.more button{flex:1 1 calc(20% - 6px);max-width:none}
+#hud .bar .btns button small{font-size:10.5px!important;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
+#hud .bar .btns button.on,#hud #bMore[aria-expanded=true]{background:linear-gradient(180deg,#ffe38a,#d9a935);box-shadow:inset 0 2px 6px rgba(80,40,0,.45)}
+#hud .bar .btns button.listening{background:linear-gradient(180deg,#ffb0a0,#e0563f);animation:listen 1s ease-in-out infinite}
+@keyframes listen{0%,100%{box-shadow:0 0 0 0 rgba(255,80,50,.7)}50%{box-shadow:0 0 0 10px rgba(255,80,50,0)}}
+#hud .bar .btns button.busy svg{animation:spin .8s linear infinite}@keyframes spin{to{transform:rotate(360deg)}}
+#hint{bottom:calc(env(safe-area-inset-bottom) + 140px)!important;background:rgba(22,14,10,.85);border-radius:10px}
+#hud.moreOpen #hint{bottom:calc(env(safe-area-inset-bottom) + 210px)!important}
+/* vezényszó-szalag */
+#cmd{position:absolute;left:50%;top:calc(env(safe-area-inset-top) + 104px);transform:translate(-50%,-14px);opacity:0;pointer-events:none;max-width:92%;text-align:center;
+  font:700 clamp(17px,4.8vw,24px)/1.2 "IM Fell English",Georgia,serif;color:#1c1310;padding:8px 22px;
+  background:linear-gradient(180deg,#fff6d6,#ecd394);border:2px solid #1c1310;border-radius:4px;box-shadow:0 0 0 3px #c9a03a,0 8px 18px rgba(0,0,0,.5);transition:opacity .25s,transform .25s}
+#cmd::before,#cmd::after{content:"";position:absolute;top:8px;bottom:8px;width:14px;background:#b8322a;border:2px solid #1c1310}
+#cmd::before{left:-16px;clip-path:polygon(0 0,100% 0,100% 100%,0 100%,40% 50%)}#cmd::after{right:-16px;clip-path:polygon(0 0,100% 0,60% 50%,100% 100%,0 100%)}
+#cmd.show{opacity:1;transform:translate(-50%,0)}
+#cmd.hintc{box-shadow:0 0 0 3px #5aaaff,0 8px 18px rgba(0,0,0,.5)}
+/* krónika */
+#log{position:absolute;right:30px;top:calc(env(safe-area-inset-top) + 150px);width:150px;max-height:42vh;display:flex;flex-direction:column;pointer-events:auto;
+  background:linear-gradient(180deg,rgba(251,243,214,.95),rgba(226,201,138,.95));border:2px solid #1c1310;border-radius:10px;box-shadow:0 0 0 2px #c9a03a,0 8px 20px rgba(0,0,0,.5);padding:6px 8px}
+#log h3{margin:0 0 4px;font:700 17px "UnifrakturCook","IM Fell English",serif;text-align:center;color:#8a1c14}
+#log ol{margin:0;padding:0 0 0 26px;overflow:auto;font:700 15px/1.45 "IM Fell English",Georgia,serif;color:#1c1310}
+#log li::marker{color:#8a5a2b}
+#log li span{display:inline-block;min-width:52px}
+#log li span.b{color:#5a2a6a}
+/* menü: kártyák */
+.panel{width:min(460px,100%);padding:14px 14px 18px}
+.card{background:linear-gradient(180deg,rgba(255,251,236,.7),rgba(240,222,170,.55));border:1.5px solid rgba(43,27,16,.35);border-radius:12px;padding:10px 12px 12px;margin:10px 0;box-shadow:inset 0 1px 0 rgba(255,255,255,.6),0 2px 6px rgba(80,50,10,.18);text-align:left}
+.card h2{margin:0 0 4px;font:700 20px/1.2 "IM Fell English",Georgia,serif;color:#8a1c14;display:flex;align-items:center}
+.card .row-label:first-of-type{margin-top:6px}
+.card button.big{margin-top:10px}
+details.card summary{cursor:pointer;font:700 19px "IM Fell English",Georgia,serif;color:#8a1c14;list-style:none;display:flex;justify-content:space-between;align-items:center}
+details.card summary::-webkit-details-marker{display:none}
+details.card summary::after{content:"";width:10px;height:10px;border-right:3px solid #8a1c14;border-bottom:3px solid #8a1c14;transform:rotate(45deg);transition:transform .2s;margin-right:6px}
+details.card[open] summary::after{transform:rotate(-135deg)}
+.card.foot{background:none;border:none;box-shadow:none;padding:0}
+.seg button{transition:background .15s,color .15s}
+.opts label{font-weight:400;font-size:16px;line-height:1.3}
+input[type=checkbox]{width:20px;height:20px;accent-color:#8a1c14;flex:0 0 auto}
+@media(min-width:620px){#hud .bar .btns button{height:60px}#log{width:180px}}
+/* v1.1 finomítás: krónika vízszintes szalag a körjelző alatt (nem takarja a táblát), vezényszó lejjebb */
+#log{left:50%;right:auto;transform:translateX(-50%);top:calc(env(safe-area-inset-top) + 100px);width:min(92%,560px);max-height:none;flex-direction:row;align-items:center;gap:8px;padding:4px 10px;border-radius:8px}
+#log h3{margin:0;font-size:15px;flex:0 0 auto}
+#log ol{display:flex;gap:10px;overflow-x:auto;overflow-y:hidden;white-space:nowrap;padding:0;list-style:none;counter-reset:mv;font-size:14px;scrollbar-width:none}
+#log ol::-webkit-scrollbar{display:none}
+#log li{counter-increment:mv;flex:0 0 auto}#log li::before{content:counter(mv) ".";color:#8a5a2b;margin-right:3px}
+#log li span{min-width:0;margin-right:4px}
+#cmd{top:calc(env(safe-area-inset-top) + 142px);font-size:clamp(15px,4.2vw,21px);padding:6px 18px}
+#hud.moreOpen #hint{display:none}
+#hud .bar .btns.more{display:none;grid-template-columns:repeat(5,1fr)}#hud.moreOpen .bar .btns.more{display:grid}
+#hud .bar .btns.more button{max-width:none}
+.join select{flex:0 0 47%;font-size:17px!important;padding:9px 6px}

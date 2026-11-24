@@ -22,6 +22,14 @@ Fehér · Fekete · Vörös · Arany (mindenki a sajátját választja; azonos v
 - A győztes királyát megkoronázzák; a vesztes seregét **sárkány** elégeti, **hóhér** lefejezi, vagy egymást **nyakon szúrják**.
 - Döntetlennél a **Fekete Halál** visz el mindenkit.
 
+## v1.1.0 – Élő kő
+- **Élő kőbábuk:** ütéskor a bábu megreped, majd kőtörmelékké omlik (porfelhő, guruló kövek, kőhalom). Beállítás: *Véres* / *Vegyes* / *Élő kő*.
+- **Vezényszó:** minden lépésnél a hadvezér kimondja a parancsot („Huszár, f3-ra!”, „Gyalog, d5-re, üsd le a gyalogot!”) – felirat-szalagon, és ha a készüléken van magyar felolvasó hang, hangosan is. A bábu engedelmeskedik („Igenis, uram!”).
+- **Hangparancs (Vezényelj gomb):** mondd ki a lépést: „e2 e4”, „huszár f3”, „é kettő é négy”, „rövid sánc”. (Chrome/Edge/Android; a böngésző kéri a mikrofon engedélyét.)
+- **Tanács:** a tanácsos kék nyíllal és szóval súg egy jó lépést.
+- **Krónika:** a lépések magyar jelöléssel (H f3, exd5, 0-0, Vh4#) a körjelző alatti szalagon.
+- **Új felület:** sötét, aranykeretes parancssáv a fő gombokkal, a többi a „Több” fiókban; a menü kártyákra bontva, a beállítások lenyitható részben.
+
 ## v1.0.1 – automatikus frissítés
 - Az új kiadás **magától betöltődik**, ha épp nincs csata (menüben, a csata végén). Csata közben soha: ilyenkor felül jelzi, és a várba (menübe) lépéskor vagy új csata indításakor tölti be.
 - Ellenőrzés induláskor, 10 percenként és az alkalmazásba visszatéréskor. Hurokvédelem: ugyanarra a verzióra 10 percen belül csak egyszer próbál.
@@ -74,6 +82,7 @@ Helyben: `python3 -m http.server` majd `http://localhost:8000`.
 | `js/scenes.js` | háttérjelenetek: disznóvágás, kínzás |
 | `js/net.js` | Firestore szobák |
 | `js/main.js` | menü, játékmódok, bemenet |
+| `js/commands.js` | vezényszó, lépésjelölés, hangparancs-értelmezés |
 
 ## Telepítés telefonra, frissítés (v0.9.0)
 - A játék **PWA**: Androidon a menü alján megjelenik a „Vidd haza a várat" gomb, iPhone-on Megosztás → „Főképernyőhöz adás". Teljes képernyőn indul, a bolond elleni játék hálózat nélkül is megy.

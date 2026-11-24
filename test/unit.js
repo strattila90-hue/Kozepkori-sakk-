@@ -37,6 +37,16 @@ t('újrajátszás: nem-lista és hosszú lista nem dob hibát', () => { eq(Proto
 t('eredmény/emote: hamis érték elutasítva', () => { eq(Proto.cleanResult({ type: 'resign', loser: 'x' }), null); eq(Proto.cleanResult({ type: 'boom' }), null); eq(Proto.cleanResult({ type: 'resign', loser: 'w' }).loser, 'w'); eq(Proto.cleanEmote({ by: 'w', kind: '<img>', n: 1 }), null); eq(Proto.cleanEmote({ by: 'w', kind: 'fart', n: 5 }).n, 5); });
 t('parseRoom: hamis dokumentum ártalmatlan nézetté alakul', () => { const r = Proto.parseRoom({ moves: ['e2e4', { result: 1 }, 'e7e5'], hostTheme: 'x', guestId: 'g', guestName: '<i>' + 'y'.repeat(50), hostSide: 'z', result: { type: 'resign', loser: 7 }, draw: 'q', emote: { kind: 'x' } }); eq(r.moves.length, 1); eq(r.badMoves, true); eq(r.hostTheme, 'white'); eq(r.hostSide, 'w'); eq(r.result, null); eq(r.draw, null); eq(r.emote, null); eq(r.guestName.length <= Proto.NAME_MAX, true); eq(Proto.parseRoom(null).moves.length, 0); eq(Proto.parseRoom('x').hostName, 'Gazda'); });
 
+console.log('Vezényszó és hangparancs (js/commands.js)');
+const Cmd = require(path.join(ROOT, 'js/commands.js'));
+t('kimondott lépés: mezőpár, csak célmező, betű+számnév, bábunév', () => { const g = new Chess(); const mv = x => { const r = Cmd.parseVoice(x, g); if (!r.move) throw new Error(x + ': ' + r.error); return Chess.sqName(r.move.from) + Chess.sqName(r.move.to); };
+  eq(mv('e2 e4'), 'e2e4'); eq(mv('e4'), 'e2e4'); eq(mv('é kettő é négy'), 'e2e4'); eq(mv('huszár f3'), 'g1f3'); eq(mv('ló ef három'), 'g1f3'); eq(mv('Huszár f3-ra!'), 'g1f3'); eq(mv('e kettőről e négyre'), 'e2e4'); });
+t('kimondott lépés: szabálytalan / értelmetlen parancs hibaüzenetet ad', () => { const g = new Chess(); for (const x of ['futó c4', 'bástya a3', 'jó napot', '', 'rövid sánc']) if (!Cmd.parseVoice(x, g).error) throw new Error(x); });
+t('sánc hangparancsra', () => { const g = new Chess(); play(g, ['e2e4', 'e7e5', 'g1f3', 'b8c6', 'f1c4', 'g8f6']); const r = Cmd.parseVoice('rövid sánc', g); eq(Chess.sqName(r.move.to), 'g1'); });
+t('lépésjelölés és vezényszó', () => { const g = new Chess(); play(g, ['e2e4', 'd7d5']); const m = g.move({ from: 'e4', to: 'd5' }); eq(Cmd.note(m), 'exd5'); eq(Cmd.command(m), 'Gyalog, d5-re, üsd le a gyalogot!');
+  const g2 = new Chess(); play(g2, ['f2f3', 'e7e5', 'g2g4']); const mt = g2.move({ from: 'd8', to: 'h4' }); eq(Cmd.note(mt), 'Vh4#'); eq(Cmd.command(mt), 'Vezér, h4-re! Matt!');
+  const g3 = new Chess('8/P6k/8/8/8/8/8/K7 w - - 0 1'); eq(Cmd.note(g3.move({ from: 'a7', to: 'a8', promo: 'q' })), 'a8=V'); });
+
 console.log('Kiadás és eszközök');
 const j = JSON.parse(fs.readFileSync(path.join(ROOT, 'version.json'), 'utf8')).version;
 t('verzió: version.json = sw.js = main.js = package.json', () => {

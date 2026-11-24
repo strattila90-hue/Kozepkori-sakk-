@@ -127,7 +127,7 @@
   };
   W.setup = function (game) {
     W.pieces = []; W.bodies = []; W.actors = []; W.parts = []; W.decals = []; W.tweens = []; W.emitters = [];
-    W.ending = false; W.busy = false; W.hl = { sel: -1, targets: [], last: [-1, -1], check: -1 };
+    W.ending = false; W.busy = false; W.hl = { sel: -1, targets: [], last: [-1, -1], check: -1, hint: null };
     W.skip = false; W.moverEnt = null; W.crownFx = null; W.dragonFx = null; W.fog = 0;
     for (const c of W.crowd) { c.hidden = false; c.cheer = 0; }
     game.board.forEach((ch, sq) => { if (ch) W.pieces.push(W.mkPiece(ch, sq)); });
@@ -433,6 +433,14 @@
         ctx.fillStyle = 'rgba(255,196,40,.78)'; ctx.fill(); ctx.strokeStyle = '#1c1310'; ctx.lineWidth = 2; ctx.stroke();
       }
     }
+    const hn = W.hl.hint;
+    if (hn) {   // a tanácsos nyila: kék, lüktető
+      const f = W.sqPos(hn.from), t = W.sqPos(hn.to), a = W.P(f.x, 0, f.z), b = W.P(t.x, 0, t.z), k = (a.k + b.k) / 2, dx = b.x - a.x, dy = b.y - a.y, Ln = Math.hypot(dx, dy) || 1, ux = dx / Ln, uy = dy / Ln, nx = -uy, ny = ux, pu = 0.7 + 0.3 * Math.sin(W.time * 5);
+      const w = k * 0.08, hw = k * 0.22, head = k * 0.36, e1 = { x: b.x - ux * k * 0.2, y: b.y - uy * k * 0.2 }, s1 = { x: a.x + ux * k * 0.25, y: a.y + uy * k * 0.25 };
+      ctx.beginPath(); ctx.moveTo(s1.x + nx * w, s1.y + ny * w); ctx.lineTo(e1.x - ux * head + nx * w, e1.y - uy * head + ny * w); ctx.lineTo(e1.x - ux * head + nx * hw, e1.y - uy * head + ny * hw); ctx.lineTo(e1.x, e1.y);
+      ctx.lineTo(e1.x - ux * head - nx * hw, e1.y - uy * head - ny * hw); ctx.lineTo(e1.x - ux * head - nx * w, e1.y - uy * head - ny * w); ctx.lineTo(s1.x - nx * w, s1.y - ny * w); ctx.closePath();
+      ctx.fillStyle = `rgba(90,170,255,${0.55 + 0.3 * pu})`; ctx.fill(); ctx.strokeStyle = '#0d1f3a'; ctx.lineWidth = 2; ctx.stroke();
+    }
     const sel = W.hl.sel;
     if (sel >= 0) { const q = W.sqPos(sel); quad(q.x - 0.5, q.z - 0.5, q.x + 0.5, q.z + 0.5, 0); ctx.fillStyle = 'rgba(255,214,90,.45)'; ctx.fill(); ctx.strokeStyle = '#ffd24a'; ctx.lineWidth = 2.5; ctx.stroke(); }
     for (const t of W.hl.targets) {
@@ -608,6 +616,7 @@
       else if (p.kind === 'text') { ctx.globalAlpha = a; ctx.font = `bold ${Math.max(12, q.k * p.size)}px "IM Fell English", Georgia, serif`; ctx.fillStyle = p.color; ctx.strokeStyle = '#2a170b'; ctx.lineWidth = 3; ctx.textAlign = 'center'; ctx.strokeText(p.text, q.x, q.y); ctx.fillText(p.text, q.x, q.y); ctx.globalAlpha = 1; }
       else if (p.kind === 'head' && p.fig) { const f = p.fig; ctx.save(); ctx.translate(q.x, q.y); ctx.rotate(p.rot); ctx.scale(q.k * (f.mirror ? -1 : 1), q.k); ctx.drawImage(f.img, f.sx, f.sy, f.sw, f.sh, -f.w / 2, -f.h / 2, f.w, f.h); ctx.restore(); }
       else if (p.kind === 'head') { ctx.save(); ctx.translate(q.x, q.y); ctx.rotate(p.rot); ctx.scale(q.k, q.k); S.face(ctx, { skin: p.skin, ph: 1, T: 0, state: 'dead', expr: 'dead' }, 0, -0.2, 0.2, {}); ctx.restore(); }
+      else if (p.kind === 'gib' && p.rock) { ctx.save(); ctx.translate(q.x, q.y); ctx.rotate(p.rot); ctx.globalAlpha = Math.min(1, p.life); ctx.fillStyle = p.color; ctx.strokeStyle = '#2a2420'; ctx.lineWidth = 1.2; ctx.beginPath(); for (let k = 0; k < p.sides; k++) { const an = k / p.sides * TAU, rr = s * (1.2 + ((k * 7 + p.sides) % 3) * 0.25); k ? ctx.lineTo(Math.cos(an) * rr, Math.sin(an) * rr * 0.8) : ctx.moveTo(Math.cos(an) * rr, Math.sin(an) * rr * 0.8); } ctx.closePath(); ctx.fill(); ctx.stroke(); ctx.fillStyle = 'rgba(255,255,255,.25)'; ctx.fillRect(-s * 0.6, -s * 0.6, s * 0.6, s * 0.4); ctx.restore(); }
       else if (p.kind === 'gib') { ctx.save(); ctx.translate(q.x, q.y); ctx.rotate(p.rot); ctx.fillStyle = p.color; ctx.strokeStyle = '#2a170b'; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.ellipse(0, 0, s * 1.3, s * 0.7, 0, 0, TAU); ctx.fill(); ctx.stroke(); ctx.restore(); }
       else if (p.kind === 'conf') { ctx.save(); ctx.translate(q.x, q.y); ctx.rotate(p.rot); ctx.fillStyle = p.color; ctx.fillRect(-s, -s * 0.5, s * 2, s); ctx.restore(); }
       else if (p.kind === 'slash') { const rr = p.size * q.k, a0 = a; ctx.save(); ctx.translate(q.x, q.y); ctx.rotate(-0.3); ctx.globalAlpha = a0; ctx.lineCap = 'round'; ctx.strokeStyle = p.color; ctx.lineWidth = Math.max(3, q.k * 0.09) * a0; ctx.beginPath(); ctx.arc(0, 0, rr, -2.1, 0.9); ctx.stroke(); ctx.lineWidth = Math.max(1.5, q.k * 0.04); ctx.strokeStyle = '#1c1310'; ctx.globalAlpha = a0 * 0.6; ctx.beginPath(); ctx.arc(0, 0, rr * 1.08, -2.0, 0.8); ctx.stroke(); ctx.restore(); }
