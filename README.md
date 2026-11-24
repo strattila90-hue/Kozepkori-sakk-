@@ -51,3 +51,6 @@ Helyben: `python3 -m http.server` majd `http://localhost:8000`.
 - **Frissítés:** a menü alján a „Hírnököt küldök" gomb megnézi, van-e újabb kiadás; ha van, felajánlja a betöltést. Induláskor is magától ellenőriz.
 - **Új kiadás kiadása:** írd át a verziót három helyen azonos értékre: `version.json`, `sw.js` (`VERSION`), `js/main.js` (`APP_V`). A régi gyorsítótárat a következő indulás eldobja.
 - **QR-kód:** a szoba megnyitásakor a váróteremben a meghívó link QR-kódja is megjelenik (`js/qrcode.js`, MIT).
+
+## Tesztelés
+`npm test` (vagy `node test/run-all.js`): szintaxis, eslint (ha telepített), egységtesztek (`test/unit.js`: sakkszabályok, szövegek, kiadási konzisztencia, eszközök) és böngészős füsttesztek (`test/smoke.js`: kijelölés, visszalépés, bot, online nézet-tájolás). Hosszabb véletlen-játszma minden végjátékkal: `npm run fuzz`. Részletek és a nyitott kockázatok: `docs/AUDIT.md`.

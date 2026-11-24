@@ -248,7 +248,7 @@
     const hy = shy - hr * 1.05;
     if (head(ctx, e, 0.01, hy, hr, { coif: true, tr: o.stern ? { sep: 1 } : tr, stern: o.stern, nose: o.stern ? 1.15 : tr.nose, teeth: o.stern ? false : tr.teeth, beard: o.beard, rednose: o.stern ? false : tr.rednose, wart: o.stern ? false : tr.wart })) { if (o.hat) o.hat(ctx, 0.01, hy, hr, th, e, tr); }
     // bal kar: pajzs / hátra
-    const sa = o.shield ? 1.5 : 1.9, sx0 = -0.16 * s, sy0 = shy + 0.05;
+    const sx0 = -0.16 * s, sy0 = shy + 0.05;
     limb(ctx, sx0, sy0, sx0 - 0.1 * s, sy0 + 0.25 * s * (o.shield ? 0.7 : 1), 0.095 * s, th.sleeve || C.mail);
     if (o.shield) { ctx.save(); ctx.translate(sx0 - 0.15 * s, sy0 + 0.22 * s); poly(ctx, [[-0.16, -0.18], [0.16, -0.18], [0.16, 0.04], [0, 0.3], [-0.16, 0.04]], th.main, 0.022); ctx.fillStyle = th.trim; ctx.fillRect(-0.03, -0.16, 0.06, 0.4); ctx.fillRect(-0.12, -0.06, 0.24, 0.06); ln(ctx, 0.015); ctx.strokeRect(-0.03, -0.16, 0.06, 0.4); ctx.restore(); }
     else ell(ctx, sx0 - 0.1 * s, sy0 + 0.27 * s, 0.05, 0.05, o.armor ? STEEL : e.skin, 0, 0.015);
@@ -260,7 +260,6 @@
     blade(ctx, hx, hy2, ang - (o.sword ? 0.55 : 0.12), o.sword ? 0.55 : 0.24, o.sword ? 0.035 : 0.028, e);
     ctx.restore();
   }
-  const hatCap = (ctx, x, y, r, th) => { ctx.beginPath(); ctx.arc(x, y - r * 0.4, r * 0.95, Math.PI * 1.05, TAU * 0.98); ctx.closePath(); paint(ctx, th.main); rrect(ctx, x - r, y - r * 0.5, r * 2, r * 0.18, 0.02, th.trim, 0.016); };
   function helm(ctx, x, y, r, v, th) {
     const dome = (rad, yy) => { ctx.beginPath(); ctx.arc(x, yy, rad, Math.PI, TAU); ctx.lineTo(x + rad, yy + r * 0.12); ctx.lineTo(x - rad, yy + r * 0.12); ctx.closePath(); paint(ctx, STEEL); };
     if (v === 0) { dome(r * 1.12, y - r * 0.28); rrect(ctx, x + r * 0.02, y - r * 0.2, r * 0.14, r * 0.95, 0.01, STEEL_D, 0.016); rrect(ctx, x - r * 1.14, y - r * 0.4, r * 2.28, r * 0.1, 0.01, th.trim, 0.014); }
