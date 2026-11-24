@@ -22,6 +22,9 @@ Fehér · Fekete · Vörös · Arany (mindenki a sajátját választja; azonos v
 - A győztes királyát megkoronázzák; a vesztes seregét **sárkány** elégeti, **hóhér** lefejezi, vagy egymást **nyakon szúrják**.
 - Döntetlennél a **Fekete Halál** visz el mindenkit.
 
+## v1.0.0 – első éles kiadás
+A v0.9.7–v0.10.0 összes újítása élesítve: olvasható buborékok és szobakód, középkori zene, élethűbb hóhér és disznóvágás, diófa tábla, szúró kezek, lépő lábak, élőbb tömeg, csapkodó szárnyú sárkány.
+
 ## v0.10.0
 - **Szúró kezek:** támadáskor a bábu karja hátralendül, majd előredöf (gyalog/futó: tőr, király/királynő/lovag: kard, bástya: lándzsa); a találat után véres a penge.
 - **Lépő lábak:** a gyalog és a bástya lábai felváltva lépnek, a lovas lova lépked; ugrálás helyett lépegetés (a ló ugrik). A palástosok ringatózva vonulnak.
