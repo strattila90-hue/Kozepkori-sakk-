@@ -61,6 +61,15 @@
     rrect(ctx, -0.015, -w * 3.2, 0.05, w * 6.4, 0.015, C.gold, 0.02); ell(ctx, -0.06, 0, 0.04, 0.04, C.gold, 0, 0.02);
     ctx.restore(); if (e) glint(ctx, e, x + Math.cos(ang) * len, y + Math.sin(ang) * len);
   }
+  const STEEL = '#aab3bf', STEEL_D = '#6f7782';
+  function traits(e) {
+    if (e._tr) return e._tr;
+    let sd = Math.floor((e.ph || 0.37) * 100000) % 2147483646 + 7; const r = () => { sd = (sd * 16807) % 2147483647; return sd / 2147483647; };
+    const pk = a => a[Math.floor(r() * a.length)];
+    e._tr = { sep: 0.9 + r() * 0.3, nose: 0.85 + r() * 0.75, stache: r() < 0.4 ? pk(['#6b4a2a', '#2b1b10', '#c9772e', '#b9a98a']) : null, scar: r() < 0.25, patch: r() < 0.1,
+      freckles: r() < 0.3, teeth: r() < 0.3, wart: r() < 0.1, rednose: r() < 0.2, bigEars: r() < 0.3, helm: Math.floor(r() * 3), brow: r(), hairC: pk(['#b9873a', '#6b4a2a', '#2b1b10', '#c9772e', '#d8cdb0']) };
+    return e._tr;
+  }
   const sway = (e, a) => Math.sin((e.T || 0) * 2.2 + e.ph) * (a || 0.012);
   function crownGfx(ctx, x, y, s) {
     ctx.save(); ctx.translate(x, y); ctx.scale(s, s);
@@ -81,10 +90,12 @@
     if (e.state === 'dead' || e.state === 'ash') ex = 'dead';
     const burnt = e.burn > 0.5;
     if (o.coif) mailShape(ctx, () => { ctx.ellipse(x - r * 0.05, y + r * 0.08, r * 1.3, r * 1.32, 0, 0, TAU); }, [x - r * 1.4, y - r * 1.4, x + r * 1.4, y + r * 1.5], burnt ? '#3a3330' : C.mail);
+    const tr = o.tr || {}, earK = tr.bigEars ? 1.6 : 1;
+    for (const sd of [-1, 1]) ell(ctx, x + sd * r * 0.84, y + r * 0.08, r * 0.16 * earK, r * 0.24 * earK, burnt ? '#3a2f2a' : skin, 0, 0.016);
     ctx.beginPath(); ctx.ellipse(x, y, r * 0.86, r, 0, 0, TAU); paint(ctx, burnt ? '#3a2f2a' : skin);
     if (!burnt) { ctx.fillStyle = 'rgba(214,84,64,.5)'; ctx.beginPath(); ctx.arc(x - r * 0.42, y + r * 0.32, r * 0.17, 0, TAU); ctx.arc(x + r * 0.45, y + r * 0.32, r * 0.17, 0, TAU); ctx.fill(); }
     if (o.hair && !o.coif) { ctx.fillStyle = o.hair; ctx.beginPath(); for (let i = 0; i < 7; i++) { const a = Math.PI * 1.05 + i * 0.5; ctx.moveTo(x + Math.cos(a) * r * 0.95 + r * 0.22, y + Math.sin(a) * r * 1.0); ctx.arc(x + Math.cos(a) * r * 0.95, y + Math.sin(a) * r * 1.0, r * 0.22, 0, TAU); } ctx.fill(); ln(ctx, 0.016); ctx.stroke(); }
-    const ey = y - r * 0.1, ed = r * 0.36, er = r * 0.2, lk = (e.look || 0) * r * 0.06 + r * 0.07;
+    const ey = y - r * 0.1, ed = r * 0.36 * (tr.sep || 1), er = r * 0.2, lk = (e.look || 0) * r * 0.06 + r * 0.07;
     const blink = ((t * 0.6 + e.ph * 3) % 5) < 0.09;
     ln(ctx, 0.018);
     if (ex === 'dead') {
@@ -108,7 +119,8 @@
       const cx = x + s * ed + r * 0.04; ctx.beginPath();
       if (ex === 'angry') { ctx.moveTo(cx - s * er * 1.3, by - er * 0.6); ctx.lineTo(cx + s * er * 0.9, by + er * 0.7); }
       else if (ex === 'pain') { ctx.moveTo(cx - s * er * 1.1, by + er * 0.5); ctx.quadraticCurveTo(cx, by - er * 0.6, cx + s * er * 1.1, by - er * 0.3); }
-      else { ctx.moveTo(cx - er * 1.1, by + er * 0.1); ctx.quadraticCurveTo(cx, by - er * 0.5, cx + er * 1.1, by + er * 0.2); }
+      else if (o.stern) { ctx.moveTo(cx - s * er * 1.3, by - er * 0.6); ctx.lineTo(cx + s * er * 1.0, by + er * 0.25); }
+      else { ctx.moveTo(cx - er * 1.1, by + er * 0.1); ctx.quadraticCurveTo(cx, by - er * 0.5 - (tr.brow || 0) * er * 0.6, cx + er * 1.1, by + er * 0.2 + (tr.brow || 0) * er * 0.5); }
       ctx.stroke();
     }
     // hosszú, ívelt orr
@@ -125,6 +137,7 @@
       ctx.fillStyle = '#fff'; for (let i = -1; i <= 2; i++) ctx.fillRect(x + i * r * 0.1 - r * 0.02, my, r * 0.08, r * 0.08);
     } else if (ex === 'cheer' || ex === 'laugh') {
       ctx.beginPath(); ctx.arc(x + r * 0.05, my - r * 0.1, r * 0.3, 0.05, Math.PI - 0.05); ctx.closePath(); paint(ctx, '#6a1414', 0.016);
+    } else if (o.stern) { ctx.beginPath(); ctx.moveTo(x - r * 0.18, my); ctx.lineTo(x + r * 0.34, my - r * 0.03); ctx.stroke();
     } else if (o.tongue || Math.sin(t * 1.3 + e.ph * 5) > 0.94) {
       ctx.beginPath(); ctx.arc(x + r * 0.05, my - r * 0.12, r * 0.24, 0.1, Math.PI - 0.1); ctx.stroke();
       ell(ctx, x + r * 0.1, my + r * 0.16, r * 0.1, r * 0.17, '#d9574f', 0, 0.015);
@@ -133,6 +146,10 @@
       if (o.teeth) rrect(ctx, x + r * 0.04, my + r * 0.04, r * 0.14, r * 0.17, 0.01, '#fffdf4', 0.012);
     }
     if (o.beard) { ctx.beginPath(); ctx.moveTo(x - r * 0.8, y + r * 0.1); ctx.quadraticCurveTo(x - r * 0.95, y + r * 1.25, x + r * 0.05, y + r * 1.45); ctx.quadraticCurveTo(x + r * 0.95, y + r * 1.25, x + r * 0.8, y + r * 0.1); ctx.quadraticCurveTo(x + r * 0.5, y + r * 0.7, x, y + r * 0.62); ctx.quadraticCurveTo(x - r * 0.5, y + r * 0.7, x - r * 0.8, y + r * 0.1); paint(ctx, o.beard); ln(ctx, 0.012); ctx.strokeStyle = 'rgba(43,27,16,.5)'; for (let i = -2; i <= 2; i++) { ctx.beginPath(); ctx.moveTo(x + i * r * 0.2, y + r * 0.8); ctx.lineTo(x + i * r * 0.22, y + r * 1.25); ctx.stroke(); } }
+    if (tr.freckles) { ctx.fillStyle = 'rgba(150,80,40,.7)'; ctx.beginPath(); for (const [dx, dy] of [[-0.5, 0.25], [-0.35, 0.38], [-0.28, 0.22], [0.4, 0.3], [0.5, 0.2], [0.3, 0.4]]) { ctx.moveTo(x + dx * r + 0.01, y + dy * r); ctx.arc(x + dx * r, y + dy * r, 0.01, 0, TAU); } ctx.fill(); }
+    if (tr.scar) { ln(ctx, 0.022); ctx.strokeStyle = '#b3443a'; ctx.beginPath(); ctx.moveTo(x + r * 0.28, y - r * 0.42); ctx.lineTo(x + r * 0.58, y + r * 0.45); ctx.stroke(); ctx.lineWidth = 0.012; for (const k of [0.0, 0.3, 0.6]) { ctx.beginPath(); ctx.moveTo(x + r * (0.35 + k * 0.2) - 0.03, y + r * (-0.2 + k * 0.5)); ctx.lineTo(x + r * (0.35 + k * 0.2) + 0.03, y + r * (-0.2 + k * 0.5)); ctx.stroke(); } }
+    if (tr.stache) { ell(ctx, x - r * 0.12, y + r * 0.5, r * 0.3, r * 0.09, tr.stache, 0.25, 0.014); ell(ctx, x + r * 0.36, y + r * 0.5, r * 0.3, r * 0.09, tr.stache, -0.25, 0.014); }
+    if (tr.patch) { const px = x + ed + r * 0.04; ln(ctx, 0.018); ctx.strokeStyle = '#2b1b10'; ctx.beginPath(); ctx.moveTo(px, ey); ctx.lineTo(x - r * 0.8, y - r * 0.45); ctx.moveTo(px, ey); ctx.lineTo(x + r * 0.85, y - r * 0.5); ctx.stroke(); ell(ctx, px, ey, er * 1.25, er * 1.15, '#1a120c', 0, 0.015); }
     if (o.wart) { ctx.fillStyle = '#7a4a2a'; ctx.beginPath(); ctx.arc(x + r * 0.5, y + r * 0.5, r * 0.07, 0, TAU); ctx.fill(); }
   }
   function head(ctx, e, x, y, r, o) {
@@ -141,7 +158,7 @@
   }
 
   /* ---------- harcos (gyalog / király / lovas törzse) ---------- */
-  function legs(ctx, e, s, hip, th) {
+  function legs(ctx, e, s, hip, th, armor) {
     const mv = e.mv || 0, wp = e.wp || 0, kick = e.kick || 0;
     for (const k of [-1, 1]) {
       const ph = wp + (k > 0 ? Math.PI : 0), dx = Math.sin(ph) * 0.11 * mv * s, lift = Math.max(0, Math.cos(ph)) * 0.07 * mv * s;
@@ -149,15 +166,19 @@
       if (k > 0 && kick > 0) { fx = fx + (0.42 * s - fx) * kick; fy = fy + (hip + 0.12 - fy) * kick; }
       kx = (hx + fx) / 2 + 0.06 * s * (1 + kick); ky = (hip + fy) / 2 + (k > 0 && kick > 0 ? -0.05 : 0);
       mlimb(ctx, hx, hip, kx, ky, 0.085 * s); mlimb(ctx, kx, ky, fx, fy - 0.03, 0.075 * s);
-      ell(ctx, kx, ky, 0.05 * s, 0.05 * s, '#9db3c8', 0, 0.015);
+      if (armor) { limb(ctx, kx + (fx - kx) * 0.12, ky + (fy - 0.03 - ky) * 0.12, fx - (fx - kx) * 0.05, fy - 0.06, 0.092 * s, STEEL); ctx.strokeStyle = 'rgba(255,255,255,.5)'; ctx.lineWidth = 0.012; ctx.beginPath(); ctx.moveTo(kx + 0.02, ky + 0.06); ctx.lineTo(fx + 0.02, fy - 0.1); ctx.stroke(); }
+      ell(ctx, kx, ky, 0.058 * s, 0.058 * s, armor ? STEEL : '#9db3c8', 0, 0.016);
       poly(ctx, [[fx - 0.06, fy - 0.1], [fx - 0.07, fy + 0.01], [fx + 0.3 * s, fy + 0.01], [fx + 0.08, fy - 0.08]], th.trim === '#9aa0b4' ? C.leather : th.trim, 0.02);
     }
   }
   function soldier(ctx, e, th, o) {
     const s = o.s || 1, hip = -0.5 * s, shy = -0.93 * s, b = sway(e), hr = (o.hr || 0.15) * s;
-    if (!o.noLegs) legs(ctx, e, s, hip, th);
+    const tr = traits(e); if (!o.noLegs) legs(ctx, e, s, hip, th, o.armor);
     ctx.save(); ctx.translate(0, b); ctx.rotate((e.atk > 0.3 && e.atk < 0.7) ? 0.1 : 0);
-    if (o.cape) poly(ctx, [[-0.16 * s, shy], [-0.46 * s, hip + 0.16], [-0.2 * s, hip + 0.1], [0.05, hip]], th.dark, 0.02);
+    if (o.cape) {
+      poly(ctx, [[-0.14 * s, shy], [-0.52 * s, hip + 0.2], [-0.24 * s, hip + 0.16], [0.08, hip + 0.02]], o.cape === true ? th.dark : o.cape, 0.02);
+      if (o.ermine) { ctx.strokeStyle = '#fffdf4'; ctx.lineWidth = 0.05; ctx.beginPath(); ctx.moveTo(-0.52 * s, hip + 0.2); ctx.lineTo(-0.24 * s, hip + 0.16); ctx.stroke(); ctx.fillStyle = '#2b1b10'; for (const t of [0.1, 0.4, 0.7]) { ctx.beginPath(); ctx.ellipse(-0.52 * s + 0.28 * s * t, hip + 0.2 - 0.04 * t, 0.012, 0.025, 0, 0, TAU); ctx.fill(); } }
+    }
     // pajzs (hátul, bal kéz)
     // törzs: címeres felsőruha
     const bel = o.belly || 0, w = 0.2 * s;
@@ -167,33 +188,42 @@
     ctx.strokeStyle = 'rgba(43,27,16,.35)'; ctx.lineWidth = 0.015; for (const fx of [-0.07, 0.04]) { ctx.beginPath(); ctx.moveTo(fx * s, hip - 0.18); ctx.quadraticCurveTo(fx * s + 0.02, hip, fx * s - 0.01, hip + 0.1 * s); ctx.stroke(); }
     rrect(ctx, -w - 0.03, hip - 0.07 * s, 2 * w + 0.07, 0.07 * s, 0.015, th.trim, 0.018); ell(ctx, 0.02, hip - 0.035 * s, 0.035, 0.035, C.gold, 0, 0.015);
     if (o.emblem) o.emblem(ctx, th, s);
+    if (o.armor) { ell(ctx, 0.01, shy + 0.0, 0.14 * s, 0.055 * s, STEEL, 0, 0.018); }
+    if (o.collar) { ell(ctx, 0.01, shy + 0.02, 0.21 * s, 0.08 * s, '#fffdf4', 0, 0.018); ctx.fillStyle = '#2b1b10'; for (const dx of [-0.13, -0.04, 0.05, 0.14]) { ctx.beginPath(); ctx.ellipse(0.01 + dx * s, shy + 0.04, 0.012, 0.028, 0, 0, TAU); ctx.fill(); } }
     // nyakvédő
     // fej
     const hy = shy - hr * 1.05;
-    if (head(ctx, e, 0.01, hy, hr, { coif: true, nose: 1.15, teeth: o.teeth, beard: o.beard, rednose: o.rednose })) { if (o.hat) o.hat(ctx, 0.01, hy, hr, th, e); }
+    if (head(ctx, e, 0.01, hy, hr, { coif: true, tr: o.stern ? { sep: 1 } : tr, stern: o.stern, nose: o.stern ? 1.15 : tr.nose, teeth: o.stern ? false : tr.teeth, beard: o.beard, rednose: o.stern ? false : tr.rednose, wart: o.stern ? false : tr.wart })) { if (o.hat) o.hat(ctx, 0.01, hy, hr, th, e, tr); }
     // bal kar: pajzs / hátra
     const sa = o.shield ? 1.5 : 1.9, sx0 = -0.16 * s, sy0 = shy + 0.05;
     mlimb(ctx, sx0, sy0, sx0 - 0.1 * s, sy0 + 0.25 * s * (o.shield ? 0.7 : 1), 0.08 * s);
     if (o.shield) { ctx.save(); ctx.translate(sx0 - 0.15 * s, sy0 + 0.22 * s); poly(ctx, [[-0.16, -0.18], [0.16, -0.18], [0.16, 0.04], [0, 0.3], [-0.16, 0.04]], th.main, 0.022); ctx.fillStyle = th.trim; ctx.fillRect(-0.03, -0.16, 0.06, 0.4); ctx.fillRect(-0.12, -0.06, 0.24, 0.06); ln(ctx, 0.015); ctx.strokeRect(-0.03, -0.16, 0.06, 0.4); ctx.restore(); }
-    else ell(ctx, sx0 - 0.1 * s, sy0 + 0.27 * s, 0.045, 0.045, e.skin, 0, 0.015);
+    else ell(ctx, sx0 - 0.1 * s, sy0 + 0.27 * s, 0.05, 0.05, o.armor ? STEEL : e.skin, 0, 0.015);
+    if (o.leftItem) o.leftItem(ctx, sx0 - 0.1 * s, sy0 + 0.27 * s, th);
     // jobb kar + fegyver
     const ang = armAng(e, 1.1), sx = 0.17 * s, sy = shy + 0.05, L = 0.28 * s, hx = sx + Math.cos(ang) * L, hy2 = sy + Math.sin(ang) * L;
-    mlimb(ctx, sx, sy, hx, hy2, 0.08 * s); ell(ctx, hx, hy2, 0.05, 0.05, e.skin, 0, 0.015);
+    mlimb(ctx, sx, sy, hx, hy2, 0.08 * s); ell(ctx, hx, hy2, 0.055, 0.055, o.armor ? STEEL : e.skin, 0, 0.015);
+    if (o.armor) { for (const [px, py] of [[sx, sy + 0.0], [-sx - 0.02, sy]]) { ell(ctx, px, py, 0.105 * s, 0.075 * s, STEEL, 0, 0.018); ctx.strokeStyle = 'rgba(255,255,255,.55)'; ctx.lineWidth = 0.012; ctx.beginPath(); ctx.arc(px, py, 0.07 * s, Math.PI * 1.1, Math.PI * 1.7); ctx.stroke(); } }
     blade(ctx, hx, hy2, ang - (o.sword ? 0.55 : 0.12), o.sword ? 0.55 : 0.24, o.sword ? 0.035 : 0.028, e);
     ctx.restore();
   }
-  const hatCrown = (ctx, x, y, r) => crownGfx(ctx, x + 0.02, y - r * 1.05, 0.34);
   const hatCap = (ctx, x, y, r, th) => { ctx.beginPath(); ctx.arc(x, y - r * 0.4, r * 0.95, Math.PI * 1.05, TAU * 0.98); ctx.closePath(); paint(ctx, th.main); rrect(ctx, x - r, y - r * 0.5, r * 2, r * 0.18, 0.02, th.trim, 0.016); };
+  function helm(ctx, x, y, r, v, th) {
+    const dome = (rad, yy) => { ctx.beginPath(); ctx.arc(x, yy, rad, Math.PI, TAU); ctx.lineTo(x + rad, yy + r * 0.12); ctx.lineTo(x - rad, yy + r * 0.12); ctx.closePath(); paint(ctx, STEEL); };
+    if (v === 0) { dome(r * 1.12, y - r * 0.28); rrect(ctx, x + r * 0.02, y - r * 0.2, r * 0.14, r * 0.95, 0.01, STEEL_D, 0.016); rrect(ctx, x - r * 1.14, y - r * 0.4, r * 2.28, r * 0.1, 0.01, th.trim, 0.014); }
+    else if (v === 1) { dome(r * 0.85, y - r * 0.4); ctx.beginPath(); ctx.ellipse(x, y - r * 0.28, r * 1.5, r * 0.22, 0, 0, TAU); paint(ctx, STEEL); ctx.strokeStyle = 'rgba(255,255,255,.5)'; ctx.lineWidth = 0.012; ctx.beginPath(); ctx.arc(x - r * 0.2, y - r * 0.75, r * 0.5, Math.PI * 1.1, Math.PI * 1.6); ctx.stroke(); }
+    else { dome(r * 1.0, y - r * 0.3); ctx.fillStyle = th.main; ctx.fillRect(x - r * 1.0, y - r * 0.55, r * 2.0, r * 0.2); ln(ctx, 0.014); ctx.strokeRect(x - r * 1.0, y - r * 0.55, r * 2.0, r * 0.2); poly(ctx, [[x - r * 0.1, y - r * 1.25], [x - r * 0.5, y - r * 2.0], [x + r * 0.05, y - r * 1.6], [x + r * 0.3, y - r * 2.1], [x + r * 0.3, y - r * 1.2]], th.accent, 0.014); }
+  }
 
   function drawPawn(ctx, e, th) {
-    soldier(ctx, e, th, { s: 1, hat: hatCap, emblem: (c, t, s) => { ctx.fillStyle = t.trim; ctx.beginPath(); ctx.arc(0.02, -0.78, 0.045, 0, TAU); ctx.fill(); ln(ctx, 0.014); ctx.stroke(); } });
-    // vállon átvetett zsák
+    soldier(ctx, e, th, { s: 1, armor: true, hat: (c, x, y, r, t2, ee, tr) => helm(c, x, y, r, tr.helm, t2), emblem: (c, t, s) => { ctx.fillStyle = t.trim; ctx.beginPath(); ctx.arc(0.02, -0.78, 0.045, 0, TAU); ctx.fill(); ln(ctx, 0.014); ctx.stroke(); } });
     ctx.save(); ctx.translate(-0.24, -0.62); ell(ctx, 0, 0, 0.1, 0.14, '#b79563', 0.3, 0.02); ctx.restore();
   }
   function drawKing(ctx, e, th) {
-    soldier(ctx, e, th, { s: 1.14, belly: 0.1, sword: true, shield: true, cape: true, beard: '#c9772e', hat: (c, x, y, r) => { crownGfx(c, x + 0.02, y - r * 0.85, 0.38); if (e.crown) { c.strokeStyle = 'rgba(255,230,120,.95)'; c.lineWidth = 0.04; c.beginPath(); c.ellipse(x, y - r * 2.3, 0.2, 0.05, 0, 0, TAU); c.stroke(); } },
-      emblem: (c, t, s) => { c.fillStyle = t.accent; c.fillRect(-0.025, -0.9, 0.05, 0.3); c.fillRect(-0.09, -0.8, 0.18, 0.05); ln(c, 0.014); c.strokeRect(-0.025, -0.9, 0.05, 0.3); } });
-    const sw = ((e.T || 0) * 1.2 + e.ph) % 2; if (sw < 1 && !e.headless) { ctx.fillStyle = 'rgba(120,190,255,.9)'; ctx.beginPath(); ctx.ellipse(0.2, -1.55 + sw * 0.3, 0.02, 0.035, 0, 0, TAU); ctx.fill(); }
+    soldier(ctx, e, th, { s: 1.2, belly: 0.05, sword: true, armor: true, stern: true, cape: '#a8281f', ermine: true, collar: true, beard: '#b98a3a',
+      hat: (c, x, y, r) => { crownGfx(c, x + 0.02, y - r * 1.08, 0.58); if (e.crown) { c.strokeStyle = 'rgba(255,230,120,.95)'; c.lineWidth = 0.05; c.beginPath(); c.ellipse(x, y - r * 3.1, 0.24, 0.06, 0, 0, TAU); c.stroke(); } },
+      leftItem: (c, hx, hy) => { limb(c, hx, hy + 0.3, hx, hy - 0.55, 0.035, C.gold); ell(c, hx, hy - 0.62, 0.075, 0.075, C.gold, 0, 0.02); ell(c, hx, hy - 0.62, 0.03, 0.03, '#c22', 0, 0.012); c.fillStyle = C.gold; c.fillRect(hx - 0.015, hy - 0.76, 0.03, 0.1); c.fillRect(hx - 0.05, hy - 0.73, 0.1, 0.03); },
+      emblem: (c, t, s) => { c.fillStyle = t.accent; c.fillRect(-0.03, -0.98, 0.06, 0.36); c.fillRect(-0.11, -0.86, 0.22, 0.06); ln(c, 0.014); c.strokeRect(-0.03, -0.98, 0.06, 0.36); } });
   }
 
   function drawKnight(ctx, e, th) {
@@ -206,14 +236,15 @@
     // test
     ell(ctx, 0, -0.48 + b, 0.42, 0.2, horse, 0, 0.022);
     // nyereg-takaró
-    ctx.beginPath(); ctx.moveTo(-0.22, -0.62 + b); ctx.lineTo(0.2, -0.62 + b); ctx.lineTo(0.24, -0.34 + b); ctx.lineTo(-0.26, -0.34 + b); ctx.closePath(); paint(ctx, th.main, 0.02);
-    ctx.fillStyle = th.trim; ctx.fillRect(-0.25, -0.46 + b, 0.5, 0.05);
+    ctx.beginPath(); ctx.moveTo(-0.34, -0.66 + b); ctx.lineTo(0.3, -0.66 + b); ctx.lineTo(0.4, -0.2 + b); ctx.lineTo(-0.44, -0.2 + b); ctx.closePath(); paint(ctx, th.main, 0.02);
+    ctx.fillStyle = th.trim; ctx.fillRect(-0.43, -0.3 + b, 0.82, 0.07); ctx.fillStyle = th.accent; for (const dx of [-0.3, -0.1, 0.1, 0.3]) { ctx.beginPath(); ctx.arc(dx, -0.265 + b, 0.018, 0, TAU); ctx.fill(); }
     // nyak + fej (kimeredt szemű)
     ctx.beginPath(); ctx.moveTo(0.28, -0.6); ctx.quadraticCurveTo(0.5, -0.78, 0.5, -1.0 + gal * 0.3); ctx.lineTo(0.66, -0.98); ctx.quadraticCurveTo(0.58, -0.62, 0.38, -0.38); ctx.closePath(); paint(ctx, horse, 0.02);
     ctx.strokeStyle = '#a07a3a'; ctx.lineWidth = 0.05; ctx.beginPath(); for (let i = 0; i < 5; i++) { ctx.moveTo(0.3 + i * 0.045, -0.7 - i * 0.07); ctx.quadraticCurveTo(0.2 + i * 0.03, -0.64 - i * 0.07, 0.24 + i * 0.03, -0.58 - i * 0.07); } ctx.stroke();
     ctx.save(); ctx.translate(0.6, -1.02 + gal * 0.3); ctx.rotate(0.35 + Math.sin(t * 4 + e.ph) * 0.05);
     ell(ctx, 0, 0, 0.13, 0.1, horse, 0, 0.02); ell(ctx, 0.14, 0.04, 0.12, 0.075, '#e6dcc4', 0, 0.02);
     ell(ctx, 0.19, 0.03, 0.012, 0.016, OL, 0, 0.008);
+    ctx.beginPath(); ctx.moveTo(-0.08, -0.1); ctx.quadraticCurveTo(0.14, -0.14, 0.26, 0.0); ctx.lineTo(0.12, 0.02); ctx.quadraticCurveTo(0.02, 0.0, -0.08, 0.02); ctx.closePath(); ctx.globalAlpha = 0.9; paint(ctx, STEEL, 0.016); ctx.globalAlpha = 1;
     poly(ctx, [[-0.06, -0.08], [-0.02, -0.22], [0.03, -0.08]], horse, 0.018);
     ell(ctx, 0.02, -0.02, 0.05, 0.05, '#fffdf4', 0, 0.015); ctx.fillStyle = OL; ctx.beginPath(); ctx.arc(0.035 + (e.look || 0) * 0.01, -0.02, 0.014, 0, TAU); ctx.fill(); // „elképedt" szem
     rrect(ctx, 0.17, 0.07, 0.035, 0.07, 0.008, '#fffdf4', 0.012); rrect(ctx, 0.215, 0.07, 0.035, 0.07, 0.008, '#fffdf4', 0.012);
@@ -221,7 +252,11 @@
     // lovas
     ctx.save(); ctx.translate(-0.02, -0.12 + b);
     mlimb(ctx, 0.02, -0.5, 0.16, -0.24, 0.085); poly(ctx, [[0.1, -0.26], [0.1, -0.2], [0.4, -0.2], [0.2, -0.3]], th.trim === '#9aa0b4' ? C.leather : th.trim, 0.018);
-    soldier(ctx, e, th, { s: 1, noLegs: true, sword: true, hat: (c, x, y, r) => { hatCap(c, x, y, r, th); poly(c, [[x - 0.02, y - r * 1.5], [x - 0.2 + Math.sin(t * 3) * 0.03, y - r * 2.5], [x + 0.02, y - r * 2.1], [x + 0.14, y - r * 2.6], [x + 0.08, y - r * 1.4]], th.accent, 0.016); } });
+    soldier(ctx, e, th, { s: 1, noLegs: true, sword: true, armor: true, hat: (c, x, y, r) => {
+      c.beginPath(); c.moveTo(x - r * 1.15, y + r * 0.2); c.quadraticCurveTo(x - r * 1.2, y - r * 1.9, x + r * 0.05, y - r * 2.0); c.quadraticCurveTo(x + r * 1.2, y - r * 1.8, x + r * 1.15, y + r * 0.2); c.lineTo(x + r * 0.95, y - r * 0.55); c.quadraticCurveTo(x, y - r * 0.95, x - r * 0.95, y - r * 0.55); c.closePath(); paint(c, STEEL, 0.02);
+      c.strokeStyle = 'rgba(255,255,255,.55)'; c.lineWidth = 0.014; c.beginPath(); c.arc(x - r * 0.2, y - r * 1.1, r * 0.8, Math.PI * 1.05, Math.PI * 1.55); c.stroke();
+      for (const sd of [-1, 1]) poly(c, [[x + sd * r * 1.15, y + r * 0.2], [x + sd * r * 0.95, y + r * 1.0], [x + sd * r * 0.7, y + r * 0.2]], STEEL, 0.016);
+      poly(c, [[x - 0.02, y - r * 1.95], [x - 0.22 + Math.sin(t * 3) * 0.03, y - r * 2.9], [x + 0.02, y - r * 2.4], [x + 0.16, y - r * 3.0], [x + 0.1, y - r * 1.85]], th.accent, 0.016); } });
     ctx.restore();
   }
 
@@ -238,7 +273,7 @@
     // glória
     ctx.beginPath(); ctx.arc(0.02, hy - 0.02, hr * 1.9, 0, TAU); ctx.fillStyle = '#e6bb44'; ctx.fill(); ln(ctx, 0.016); ctx.stroke();
     ctx.strokeStyle = 'rgba(156,114,24,.8)'; ctx.lineWidth = 0.01; for (let i = 0; i < 16; i++) { const a = i * TAU / 16; ctx.beginPath(); ctx.moveTo(0.02 + Math.cos(a) * hr * 1.2, hy - 0.02 + Math.sin(a) * hr * 1.2); ctx.lineTo(0.02 + Math.cos(a) * hr * 1.85, hy - 0.02 + Math.sin(a) * hr * 1.85); ctx.stroke(); }
-    if (head(ctx, e, 0.02, hy, hr, { beard: '#d8d0c0', nose: 1.2, rednose: true })) {
+    const btr = traits(e); if (head(ctx, e, 0.02, hy, hr, { tr: btr, beard: ['#d8d0c0', '#8a6a3a', '#3a2a1a'][Math.floor(btr.brow * 2.99)], nose: btr.nose * 1.1, rednose: btr.rednose })) {
       // püspöksüveg
       poly(ctx, [[-0.16, hy - hr * 0.7], [0.02, hy - 0.62], [0.2, hy - hr * 0.7], [0.17, hy - hr * 0.45], [-0.13, hy - hr * 0.45]], th.main, 0.02);
       poly(ctx, [[-0.16, hy - hr * 0.7], [0.02, hy - 0.62], [0.02, hy - hr * 0.45], [-0.13, hy - hr * 0.45]], th.light, 0.0);
@@ -246,16 +281,18 @@
       rrect(ctx, -0.14, hy - hr * 0.6, 0.32, 0.05, 0.01, th.accent, 0.016);
       ctx.fillStyle = th.accent; ctx.fillRect(0.0, hy - 0.5, 0.04, 0.14); ctx.fillRect(-0.04, hy - 0.45, 0.12, 0.04);
     }
+    // páncélozott harcos-püspök: nyakvért, vállvért, láncujj
+    ell(ctx, 0.02, -1.0, 0.16, 0.055, STEEL, 0, 0.018);
+    mlimb(ctx, -0.18, -0.9, -0.34, -0.66, 0.085); ell(ctx, -0.36, -0.63, 0.055, 0.055, STEEL, 0, 0.015); ell(ctx, -0.17, -0.93, 0.1, 0.07, STEEL, 0, 0.018);
     // bal kéz: csirkecomb
-    mlimb(ctx, -0.18, -0.9, -0.34, -0.66, 0.08, th.main); ell(ctx, -0.36, -0.63, 0.05, 0.05, e.skin, 0, 0.015);
     ell(ctx, -0.46, -0.72, 0.06, 0.09, '#c98a4a', 0.6, 0.018); limb(ctx, -0.42, -0.66, -0.37, -0.63, 0.03, '#f3ecd2');
     // jobb kéz: pásztorbot
     const ang = armAng(e, 1.2), sx = 0.18, sy = -0.9, L = 0.28, hx = sx + Math.cos(ang) * L, hy2 = sy + Math.sin(ang) * L;
-    mlimb(ctx, sx, sy, hx, hy2, 0.08, th.main);
+    mlimb(ctx, sx, sy, hx, hy2, 0.085); ell(ctx, sx, sy - 0.02, 0.1, 0.07, STEEL, 0, 0.018);
     ctx.save(); ctx.translate(hx, hy2); ctx.rotate(ang < 0.6 ? ang - Math.PI / 2 + 0.2 : -0.05);
     limb(ctx, 0, 0.65, 0, -0.7, 0.045, C.wood);
     ctx.strokeStyle = C.gold; ctx.lineWidth = 0.05; ctx.beginPath(); ctx.arc(0.1, -0.7, 0.1, Math.PI, TAU * 0.9, false); ctx.stroke(); ln(ctx, 0.012); ctx.stroke();
-    ctx.restore(); ell(ctx, hx, hy2, 0.055, 0.055, e.skin, 0, 0.015); glint(ctx, e, hx + Math.cos(ang) * 0.3, hy2 + Math.sin(ang) * 0.3 - 0.2);
+    ctx.restore(); ell(ctx, hx, hy2, 0.058, 0.058, STEEL, 0, 0.015); glint(ctx, e, hx + Math.cos(ang) * 0.3, hy2 + Math.sin(ang) * 0.3 - 0.2);
     ctx.restore();
   }
 
@@ -265,7 +302,8 @@
     for (const [px, off] of [[-0.18, 0], [0.18, 1.7]]) {
       const ph = ((t * 0.6 + off + e.ph) % 2.4) / 2.4, up = Math.min(1, ph * 4) * (ph < 0.85 ? 1 : (1 - ph) * 6.6), gy = -1.08 - 0.13 * up, thr = ph > 0.3 && ph < 0.55;
       ctx.save(); ctx.beginPath(); ctx.rect(px - 0.2, -1.5, 0.4, 0.5); ctx.clip();
-      face(ctx, { skin: e.skin, ph: off, T: t, expr: thr ? 'angry' : 'idle', look: 0 }, px, gy, 0.1, { coif: true });
+      const mtr = traits({ ph: off + e.ph * 3 }); face(ctx, { skin: e.skin, ph: off, T: t, expr: thr ? 'angry' : 'idle', look: 0 }, px, gy, 0.1, { coif: true, tr: mtr });
+      ctx.beginPath(); ctx.arc(px, gy - 0.03, 0.115, Math.PI, TAU); ctx.lineTo(px + 0.115, gy - 0.0); ctx.lineTo(px - 0.115, gy - 0.0); ctx.closePath(); paint(ctx, STEEL, 0.016); if (mtr.helm === 1) { rrect(ctx, px - 0.15, gy - 0.05, 0.3, 0.035, 0.01, STEEL, 0.014); } else { rrect(ctx, px + 0.0, gy - 0.03, 0.025, 0.1, 0.005, STEEL_D, 0.012); }
       mlimb(ctx, px + 0.08, gy + 0.1, px + 0.16, thr ? gy - 0.16 : gy + 0.04, 0.04);
       ctx.restore();
       if (thr) { const k = (ph - 0.3) / 0.25; ell(ctx, px + 0.18 + k * 0.7, gy - 0.1 - Math.sin(k * Math.PI) * 0.35 + k * 0.3, 0.04, 0.04, k > 0.5 ? '#c33' : '#777', 0, 0.015); }
@@ -291,31 +329,37 @@
   }
 
   function drawQueen(ctx, e, th) {
-    const b = sway(e, 0.015);
-    for (const k of [-1, 1]) { const dx = Math.sin((e.wp || 0) + (k > 0 ? 3.1 : 0)) * 0.09 * (e.mv || 0); poly(ctx, [[k * 0.1 + dx - 0.05, -0.07], [k * 0.1 + dx - 0.05, 0.0], [k * 0.1 + dx + 0.2, 0.0], [k * 0.1 + dx + 0.05, -0.07]], C.leather, 0.018); }
+    const b = sway(e, 0.015), t = e.T || 0;
+    for (const k of [-1, 1]) { const dx = Math.sin((e.wp || 0) + (k > 0 ? 3.1 : 0)) * 0.09 * (e.mv || 0); poly(ctx, [[k * 0.1 + dx - 0.05, -0.07], [k * 0.1 + dx - 0.05, 0.0], [k * 0.1 + dx + 0.2, 0.0], [k * 0.1 + dx + 0.05, -0.07]], C.gold, 0.018); }
     ctx.save(); ctx.translate(0, b);
-    // hosszú ruha
+    // uszályos köpeny (hermelin szegéllyel)
+    poly(ctx, [[-0.14, -1.05], [-0.5, -0.05], [-0.1, -0.02], [0.1, -0.5]], th.dark === '#1d1a2b' ? '#3a2a5a' : '#a8281f', 0.02);
+    ctx.strokeStyle = '#fffdf4'; ctx.lineWidth = 0.05; ctx.beginPath(); ctx.moveTo(-0.5, -0.05); ctx.lineTo(-0.1, -0.02); ctx.stroke(); ctx.fillStyle = '#2b1b10'; for (const k of [0.15, 0.45, 0.75]) { ctx.beginPath(); ctx.ellipse(-0.5 + 0.4 * k, -0.045 + 0.03 * k, 0.012, 0.025, 0, 0, TAU); ctx.fill(); }
+    // díszes ruha
     poly(ctx, [[-0.16, -1.05], [0.16, -1.05], [0.4, -0.04], [-0.4, -0.04]], th.main, 0.022);
     ctx.strokeStyle = 'rgba(43,27,16,.35)'; ctx.lineWidth = 0.015; for (const x of [-0.18, -0.06, 0.07, 0.19]) { ctx.beginPath(); ctx.moveTo(x * 0.6, -0.6); ctx.quadraticCurveTo(x, -0.35, x * 1.5, -0.06); ctx.stroke(); }
-    poly(ctx, [[-0.16, -1.05], [0.16, -1.05], [0.14, -0.9], [-0.14, -0.9]], '#f6edd2', 0.018); // fehér kivágás
-    rrect(ctx, -0.17, -0.82, 0.34, 0.06, 0.015, th.trim, 0.016);
+    ctx.strokeStyle = C.gold; ctx.lineWidth = 0.035; ctx.beginPath(); ctx.moveTo(-0.38, -0.08); ctx.lineTo(0.38, -0.08); ctx.stroke();
+    ctx.fillStyle = C.gold; for (let i = -3; i <= 3; i++) { ctx.beginPath(); ctx.arc(i * 0.1, -0.08, 0.018, 0, TAU); ctx.fill(); }
+    poly(ctx, [[-0.16, -1.05], [0.16, -1.05], [0.13, -0.88], [-0.13, -0.88]], th.light, 0.018);
+    rrect(ctx, -0.17, -0.82, 0.34, 0.06, 0.015, C.gold, 0.016);
     ctx.fillStyle = th.accent; ctx.beginPath(); ctx.moveTo(0, -0.74); ctx.lineTo(0.03, -0.7); ctx.lineTo(0, -0.34); ctx.lineTo(-0.03, -0.7); ctx.closePath(); ctx.fill(); ln(ctx, 0.012); ctx.stroke();
-    // bal kar: hosszú, lelógó fehér ujj
-    poly(ctx, [[-0.16, -1.0], [-0.34, -0.7], [-0.52, -0.5], [-0.5, -0.36], [-0.3, -0.5], [-0.12, -0.8]], '#f6edd2', 0.02); ell(ctx, -0.45, -0.42, 0.045, 0.045, e.skin, 0, 0.014);
-    // fej: fátyol + hennin
-    const hy = -1.22, hr = 0.16;
-    if (head(ctx, e, 0.02, hy, hr, { wart: true, nose: 1.1 })) {
-      ctx.beginPath(); ctx.moveTo(-0.2, hy + 0.35); ctx.quadraticCurveTo(-0.26, hy - 0.2, 0.0, hy - hr * 1.12); ctx.quadraticCurveTo(0.26, hy - 0.2, 0.22, hy + 0.35); ctx.quadraticCurveTo(0.18, hy - 0.02, 0.1, hy - hr * 0.55); ctx.quadraticCurveTo(0.02, hy - hr * 0.85, -0.1, hy - hr * 0.5); ctx.quadraticCurveTo(-0.18, hy - 0.02, -0.2, hy + 0.35); paint(ctx, '#1f1a22', 0.02);
-      poly(ctx, [[-0.12, hy - hr * 0.95], [0.04, hy - 0.62], [0.16, hy - hr * 0.95]], th.main, 0.02);
-      ctx.strokeStyle = C.gold; ctx.lineWidth = 0.035; ctx.beginPath(); ctx.moveTo(-0.13, hy - hr * 1.0); ctx.lineTo(0.17, hy - hr * 1.0); ctx.stroke();
-      const w = Math.sin((e.T || 0) * 3 + e.ph) * 0.04; ctx.beginPath(); ctx.moveTo(0.04, hy - 0.62); ctx.quadraticCurveTo(0.3 + w, hy - 0.5, 0.36 + w * 2, hy - 0.05); ctx.quadraticCurveTo(0.24, hy - 0.3, 0.16, hy - hr); ctx.closePath(); ctx.globalAlpha = 0.8; paint(ctx, '#e8e0f0', 0.016); ctx.globalAlpha = 1;
-      ell(ctx, 0.04, hy - 0.63, 0.03, 0.03, '#c22', 0, 0.014);
+    // hermelin vállgallér + drágakő nyaklánc
+    ell(ctx, 0.0, -1.02, 0.2, 0.07, '#fffdf4', 0, 0.018); ctx.fillStyle = '#2b1b10'; for (const dx of [-0.13, -0.04, 0.05, 0.14]) { ctx.beginPath(); ctx.ellipse(dx, -1.0, 0.011, 0.026, 0, 0, TAU); ctx.fill(); }
+    for (const [gx, gc] of [[-0.06, '#2a6fb0'], [0.0, '#c22'], [0.06, '#2a8a4a']]) ell(ctx, gx, -0.93 + Math.abs(gx) * 0.5, 0.025, 0.025, gc, 0, 0.012);
+    // bal kar: hosszú ujj
+    poly(ctx, [[-0.16, -1.0], [-0.34, -0.7], [-0.5, -0.5], [-0.48, -0.38], [-0.3, -0.5], [-0.12, -0.8]], th.main, 0.02); ell(ctx, -0.43, -0.42, 0.045, 0.045, e.skin, 0, 0.014);
+    // fej: fátyol, korona
+    const hy = -1.22, hr = 0.16, tr = traits(e);
+    if (head(ctx, e, 0.02, hy, hr, { tr: { sep: 1, freckles: false }, stern: true, nose: 1.0 })) {
+      ctx.beginPath(); ctx.moveTo(-0.2, hy + 0.38); ctx.quadraticCurveTo(-0.27, hy - 0.2, 0.0, hy - hr * 1.12); ctx.quadraticCurveTo(0.27, hy - 0.2, 0.23, hy + 0.38); ctx.quadraticCurveTo(0.19, hy - 0.02, 0.1, hy - hr * 0.55); ctx.quadraticCurveTo(0.02, hy - hr * 0.85, -0.1, hy - hr * 0.5); ctx.quadraticCurveTo(-0.18, hy - 0.02, -0.2, hy + 0.38); paint(ctx, '#e8e0f0', 0.018);
+      crownGfx(ctx, 0.03, hy - hr * 0.98, 0.5);
+      if (e.crown) { ctx.strokeStyle = 'rgba(255,230,120,.95)'; ctx.lineWidth = 0.05; ctx.beginPath(); ctx.ellipse(0.03, hy - 0.55, 0.22, 0.055, 0, 0, TAU); ctx.stroke(); }
     }
-    // jobb kar: sodrófa
+    // jobb kar: jogar-buzogány
     const ang = armAng(e, 1.1), sx = 0.16, sy = -1.0, L = 0.3, hx = sx + Math.cos(ang) * L, hy2 = sy + Math.sin(ang) * L;
-    poly(ctx, [[sx - 0.02, sy - 0.04], [hx, hy2 - 0.07], [hx + 0.14, hy2 + 0.1], [hx - 0.02, hy2 + 0.1], [sx + 0.04, sy + 0.06]], '#f6edd2', 0.02); ell(ctx, hx, hy2, 0.05, 0.05, e.skin, 0, 0.014);
-    ctx.save(); ctx.translate(hx, hy2); ctx.rotate(ang + 0.2); rrect(ctx, -0.06, -0.04, 0.42, 0.08, 0.035, '#d9b074', 0.02); ell(ctx, 0.4, 0, 0.03, 0.03, C.woodD, 0, 0.015); ctx.restore();
-    glint(ctx, e, hx + Math.cos(ang + 0.2) * 0.38, hy2 + Math.sin(ang + 0.2) * 0.38);
+    poly(ctx, [[sx - 0.02, sy - 0.04], [hx, hy2 - 0.07], [hx + 0.14, hy2 + 0.1], [hx - 0.02, hy2 + 0.1], [sx + 0.04, sy + 0.06]], th.main, 0.02); ell(ctx, hx, hy2, 0.05, 0.05, e.skin, 0, 0.014);
+    ctx.save(); ctx.translate(hx, hy2); ctx.rotate(ang + 0.2); limb(ctx, -0.1, 0, 0.5, 0, 0.04, C.gold); ell(ctx, 0.56, 0, 0.09, 0.09, C.gold, 0, 0.02); ell(ctx, 0.56, 0, 0.035, 0.035, '#c22', 0, 0.012); for (let i = 0; i < 6; i++) { const a = i * TAU / 6; poly(ctx, [[0.56 + Math.cos(a - 0.2) * 0.08, Math.sin(a - 0.2) * 0.08], [0.56 + Math.cos(a) * 0.14, Math.sin(a) * 0.14], [0.56 + Math.cos(a + 0.2) * 0.08, Math.sin(a + 0.2) * 0.08]], C.gold, 0.014); } ctx.restore();
+    glint(ctx, e, hx + Math.cos(ang + 0.2) * 0.56, hy2 + Math.sin(ang + 0.2) * 0.56);
     ctx.restore();
   }
 
