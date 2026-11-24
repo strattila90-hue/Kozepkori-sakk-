@@ -1,0 +1,22 @@
+<!doctype html><meta charset=utf-8><body style="margin:0;background:#c9a96a"><canvas id=c width=1200 height=900></canvas>
+<script src="../js/sprites.js"></script><script>
+const c=document.getElementById('c'),ctx=c.getContext('2d');
+ctx.fillStyle='#d9c28f';ctx.fillRect(0,0,1200,900);
+const S=Sprites,ths=['white','black','red','gold'],types=['P','N','B','R','Q','K'];
+ths.forEach((tn,r)=>types.forEach((ty,i)=>{
+ ctx.save();ctx.translate(100+i*180,170+r*210);ctx.scale(110,110);
+ const e={type:ty,theme:S.THEMES[tn],skin:S.SKINS[(i+r)%5],ph:i+r,T:1.3+i*.3,atk:(r==1&&i==0)?0.5:(r==2&&i<3?0.3:0),hurt:(r==3&&i==5)?1:0,mv:0,wp:0,burn:0,look:0,expr:(r==3&&i==1)?'laugh':'idle',state:(r==3&&i==3)?'dead':'idle'};
+ S.piece(ctx,e);ctx.restore();}));
+// extras
+let x=0;
+const ex=[['crowd',{seed:.4,skin:S.SKINS[0],cloth:'#5a7a3a',hat:'straw',hatC:'#b33',prop:'mug',cheer:0}],['crowdc',{seed:.8,skin:S.SKINS[2],cloth:'#7a3a3a',hat:'hood',hatC:'#444',prop:'fork',cheer:1}]];
+ctx.save();ctx.translate(40,880);
+ctx.restore();
+ctx.save();ctx.translate(1100,200);ctx.scale(90,90);S.skeleton(ctx,{seed:1,scythe:true},1);ctx.restore();
+ctx.save();ctx.translate(1100,420);ctx.scale(90,90);S.doctor(ctx,{seed:1,mv:0},1);ctx.restore();
+ctx.save();ctx.translate(1100,640);ctx.scale(80,80);S.executioner(ctx,{raise:1,swing:.3},1);ctx.restore();
+ctx.save();ctx.translate(900,860);ctx.scale(80,80);S.dragon(ctx,{breath:1},1);ctx.restore();
+ctx.save();ctx.translate(100,870);ctx.scale(100,100);S.crowd(ctx,ex[0][1],1);ctx.restore();
+ctx.save();ctx.translate(250,870);ctx.scale(100,100);S.crowd(ctx,ex[1][1],1);ctx.restore();
+['dog','pig','hen'].forEach((k,i)=>{ctx.save();ctx.translate(420+i*140,870);ctx.scale(100,100);S.animal(ctx,{kind:k,seed:1,mv:0,eat:k=='dog'},1);ctx.restore();});
+</script>
