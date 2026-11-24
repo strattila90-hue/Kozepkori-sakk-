@@ -39,10 +39,10 @@
     }
     return { v: e.color === bottom ? 'back' : 'front', mirror: false };
   }
-  function silhouette(im, k) {
-    if (sil[k]) return sil[k];
+  function silhouette(im, k, col) {
+    col = col || '#ff2a1a'; const kk = k + col; if (sil[kk]) return sil[kk];
     const c = document.createElement('canvas'); c.width = im.width; c.height = im.height; const g = c.getContext('2d');
-    g.drawImage(im, 0, 0); g.globalCompositeOperation = 'source-in'; g.fillStyle = '#ff2a1a'; g.fillRect(0, 0, c.width, c.height); return (sil[k] = c);
+    g.drawImage(im, 0, 0); g.globalCompositeOperation = 'source-in'; g.fillStyle = col; g.fillRect(0, 0, c.width, c.height); return (sil[kk] = c);
   }
   F.headInfo = function (e) {
     const army = e.army || e.color === 'w' ? e.theme.id : e.theme.id; const vw = view(e), k = key(e.type, vw.v, e.theme.id), im = imgs[k]; if (!im) return null;
@@ -53,30 +53,43 @@
 
   /** Rajzolás: az origó a figura talpa (a talapzat közepe), 1 egység = 1 mező. Visszatér: igaz, ha figurát rajzolt. */
   F.draw = function (ctx, e) {
-    const army = e.burn > 0.55 ? 'black' : e.theme.id, vw = view(e), im = imgs[key(e.type, vw.v, army)];
-    if (!im) return false;
-    const hu = HEIGHT[e.type] / im.height, w = im.width * hu, h = HEIGHT[e.type];
-    const t = e.T || 0, sw = Math.sin(t * 2.2 + e.ph);
-    let tilt = 0;
-    if (e.atk > 0.001) { const a = e.atk, dir = (e.dir ? (e.dir.x * (root.W.flip ? -1 : 1) >= 0 ? 1 : -1) : 1); tilt = (a < 0.4 ? -0.22 * (a / 0.4) : a < 0.55 ? -0.22 + 0.62 * ((a - 0.4) / 0.15) : 0.4 * (1 - (a - 0.55) / 0.45)) * dir; }
-    const wob = (e.mv > 0 ? Math.sin((e.wp || 0)) * 0.07 : 0);
+    const vw = view(e), armyId = e.theme.id, k = key(e.type, vw.v, armyId), im = imgs[k]; if (!im) return false;
+    const hu = HEIGHT[e.type] / im.height, w = im.width * hu, h = HEIGHT[e.type], t = e.T || 0, sw = Math.sin(t * 2.2 + e.ph), burn = e.burn || 0;
+    let tilt = 0, lunge = 0;
+    if (e.atk > 0.001) { const a = e.atk, dir = (e.dir ? (e.dir.x * (root.W.flip ? -1 : 1) >= 0 ? 1 : -1) : 1); const m = a < 0.4 ? -0.28 * (a / 0.4) : a < 0.55 ? -0.28 + 0.78 * ((a - 0.4) / 0.15) : 0.5 * (1 - (a - 0.55) / 0.45); tilt = m * dir; lunge = a < 0.4 ? 0 : a < 0.55 ? (a - 0.4) / 0.15 : 1 - (a - 0.55) / 0.45; }
+    const wob = (e.mv > 0 ? Math.sin(e.wp || 0) * 0.07 : 0) + (burn > 0 && burn < 1 ? Math.sin(t * 38 + e.ph) * 0.05 : 0);
     ctx.save();
     ctx.rotate((e.rot || 0) + tilt + wob);
-    ctx.scale(e.sx * (1 - sw * 0.008), e.sy * (1 + sw * 0.012));
-    if (e.hurt > 0.05) ctx.translate((Math.random() - 0.5) * 0.06 * e.hurt, 0);
-    const vx = vw.mirror ? -1 : 1;
-    ctx.scale(vx, 1);
-    const draw = (hh) => {
-      if (e.headless) {
-        const r = HEAD[vw.v][e.type]; const [x0, y0, x1, y1] = r;
-        ctx.save(); ctx.beginPath(); ctx.rect(-w, -h * 1.2, w * 2, h * 1.4); ctx.rect(-w / 2 + x0 * w, -h + y0 * h, (x1 - x0) * w, (y1 - y0) * h); ctx.clip('evenodd');
-        ctx.drawImage(im, -w / 2, -h, w, h); ctx.restore();
-      } else ctx.drawImage(im, -w / 2, -h, w, h);
-    };
-    draw();
-    if (e.hurt > 0.05) {
-      const sc = silhouette(im, key(e.type, vw.v, army)); ctx.globalAlpha = Math.min(0.65, e.hurt * 0.6); ctx.drawImage(sc, -w / 2, -h, w, h); ctx.globalAlpha = 1;
+    const stretch = 1 + lunge * 0.1, squash = 1 - lunge * 0.06;
+    ctx.scale(e.sx * (1 - sw * 0.008) * squash, e.sy * (1 + sw * 0.012) * stretch);
+    if (e.hurt > 0.05) ctx.translate((Math.random() - 0.5) * 0.07 * e.hurt, 0);
+    ctx.scale(vw.mirror ? -1 : 1, 1);
+    const hd = HEAD[vw.v][e.type], x0 = hd[0], y0 = hd[1], x1 = hd[2], y1 = hd[3];
+    const hx = -w / 2 + x0 * w, hy = -h + y0 * h, hw = (x1 - x0) * w, hh = (y1 - y0) * h;
+    // test: a nyak körüli lyuk kimarad a testből, a fej külön forog
+    ctx.save(); ctx.beginPath(); ctx.rect(-w, -h * 1.4, w * 2, h * 1.8); ctx.rect(hx, hy, hw, hh); ctx.clip('evenodd'); ctx.drawImage(im, -w / 2, -h, w, h); ctx.restore();
+    if (!e.headless) {
+      let rot = Math.sin(t * 1.7 + e.ph * 2) * 0.035, dx = 0, dy = 0;
+      if (e.atk > 0.001) { rot += lunge * 0.22 - (e.atk < 0.4 ? 0.12 * e.atk / 0.4 : 0); dx += lunge * 0.05; dy += lunge * 0.03; }
+      if (e.hurt > 0.05) { rot += -0.32 * e.hurt + Math.sin(t * 40) * 0.05 * e.hurt; dx -= 0.06 * e.hurt; dy -= 0.03 * e.hurt; }
+      if (e.expr === 'cheer' || e.cheering) rot += Math.sin(t * 9 + e.ph) * 0.09;
+      if (burn > 0 && burn < 1) { rot += Math.sin(t * 30 + e.ph) * 0.12; dy -= Math.abs(Math.sin(t * 14)) * 0.03; }
+      if (e.state === 'dead') rot += 0.18;
+      ctx.save(); ctx.translate(hx + hw / 2 + dx, hy + hh + dy); ctx.rotate(rot); ctx.translate(-(hx + hw / 2), -(hy + hh));
+      ctx.drawImage(im, x0 * im.width, y0 * im.height, (x1 - x0) * im.width, (y1 - y0) * im.height, hx, hy, hw, hh);
+      if (burn > 0.04) { ctx.globalAlpha = Math.min(0.95, burn * 1.1); ctx.drawImage(silhouette(im, k, '#14100d'), x0 * im.width, y0 * im.height, (x1 - x0) * im.width, (y1 - y0) * im.height, hx, hy, hw, hh); ctx.globalAlpha = 1; }
+      ctx.restore();
+    } else {
+      // nyakcsonk: vörös seb + nyakcsőből kilátszó csont
+      ctx.beginPath(); ctx.ellipse(hx + hw / 2, hy + hh * 0.98, hw * 0.28, hh * 0.1, 0, 0, TAU); ctx.fillStyle = '#a30f0f'; ctx.fill(); ctx.lineWidth = 0.02; ctx.strokeStyle = '#2b0505'; ctx.stroke();
+      ctx.beginPath(); ctx.ellipse(hx + hw / 2, hy + hh * 0.97, hw * 0.1, hh * 0.04, 0, 0, TAU); ctx.fillStyle = '#f0dfc0'; ctx.fill();
     }
+    if (burn > 0.04) {
+      const dk = silhouette(im, k, '#14100d'); ctx.save(); ctx.beginPath(); ctx.rect(-w, -h * 1.4, w * 2, h * 1.8); ctx.rect(hx, hy, hw, hh); ctx.clip('evenodd');
+      ctx.globalAlpha = Math.min(0.95, burn * 1.1); ctx.drawImage(dk, -w / 2, -h, w, h); ctx.restore(); ctx.globalAlpha = 1;
+      if (burn < 1) { ctx.globalCompositeOperation = 'lighter'; ctx.globalAlpha = 0.45 * (1 - burn) * (0.7 + 0.3 * Math.sin(t * 25 + e.ph)); ctx.drawImage(silhouette(im, k, '#ff6a10'), -w / 2, -h, w, h); ctx.globalCompositeOperation = 'source-over'; ctx.globalAlpha = 1; }
+    }
+    if (e.hurt > 0.05) { ctx.globalAlpha = Math.min(0.6, e.hurt * 0.55); ctx.drawImage(silhouette(im, k, '#ff2a1a'), -w / 2, -h, w, h); ctx.globalAlpha = 1; }
     ctx.restore();
     return true;
   };

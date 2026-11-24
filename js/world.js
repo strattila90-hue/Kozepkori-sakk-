@@ -126,7 +126,7 @@
     W.strips = []; const rows = [['crowd1', -4.7, -6.3, 2.1, 0], ['crowd2', 0.2, -6.3, 2.1, 1], ['crowd4', 5.0, -6.3, 2.1, 0], ['crowd4', -5.1, -7.7, 2.3, 1], ['crowd1', -0.6, -7.7, 2.3, 1], ['crowd2', 4.6, -7.7, 2.3, 0],
       ['crowd2', -3.4, 6.7, 1.55, 1], ['crowd4', 0.2, 6.7, 1.55, 0], ['crowd1', 3.6, 6.7, 1.55, 1], ['crowd4', -6.8, 0.5, 1.7, 0], ['crowd1', 6.8, 0.5, 1.7, 1], ['crowd2', -7.0, -3, 1.9, 1], ['crowd4', 7.1, -3, 1.9, 0]];
     for (const [k, x, z, h, flip] of rows) W.strips.push({ k, x, z, h, flip, ph: Math.random() * 6, say: null });
-    W.scenery = [{ k: 'castle', x: 0, z: -12.5, h: 7.2 }, { k: 'tavern', x: -5.6, z: -9.6, h: 3.7 }, { k: 'pigfarm', x: 5.5, z: -9.4, h: 2.6 },
+    W.scenery = [{ k: 'tavern', x: -5.6, z: -9.6, h: 3.7 }, { k: 'pigfarm', x: 5.5, z: -9.4, h: 2.6 },
       { k: 'devil', x: -5.6, z: -3.9, h: 2.0, stat: 1 }, { k: 'angel', x: 5.6, z: -3.9, h: 2.2, stat: 1 }];
   }
   function buildAmbience() {
@@ -267,6 +267,16 @@
     ctx.lineTo(w, by); ctx.closePath(); ctx.fill(); ctx.stroke();
     ctx.strokeStyle = 'rgba(30,70,30,.45)'; ctx.lineWidth = 1.5; for (let i = 0; i < 40; i++) { const x = (i * 97) % w, y = by - wh * (0.2 + ((i * 53) % 50) / 100); ctx.beginPath(); ctx.arc(x, y, 5, 0, Math.PI); ctx.stroke(); }
     tree(w * 0.1, by - wh * 0.55, wh * 0.9, '#3f7a38'); tree(w * 0.45, by - wh * 0.6, wh * 0.7, '#4a8a3f'); tree(w * 0.9, by - wh * 0.58, wh * 0.85, '#3f7a38');
+    if (Figures.extra('castle')) {
+      const im = Figures.extra('castle'), cw = Math.min(cam.W * 1.5, Math.max(cam.W * 1.15, wh * 7)), ch = cw * im.height / im.width, cy = by + 2;
+      ctx.save(); ctx.globalAlpha = 0.97; ctx.drawImage(im, cam.W / 2 - cw / 2, cy - ch, cw, ch); ctx.restore();
+      // légköri pára a torony alján + fű-dombok eltakarják a vár tövét (rétegezés)
+      const hg = ctx.createLinearGradient(0, cy - ch * 0.55, 0, cy); hg.addColorStop(0, 'rgba(160,195,225,0)'); hg.addColorStop(1, 'rgba(170,200,205,.55)'); ctx.fillStyle = hg; ctx.fillRect(0, cy - ch * 0.55, cam.W, ch * 0.55);
+      ctx.fillStyle = '#6fa04c'; ctx.strokeStyle = '#2b1b10'; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(0, cy + 12);
+      for (let x = 0; x <= cam.W; x += 16) ctx.lineTo(x, cy - 6 - 7 * Math.sin(x * 0.045) - 4 * Math.sin(x * 0.13)); ctx.lineTo(cam.W, cy + 14); ctx.closePath(); ctx.fill(); ctx.stroke();
+      ctx.strokeStyle = 'rgba(30,70,30,.5)'; ctx.lineWidth = 1.3; for (let x = 6; x < cam.W; x += 14) { const yy = cy - 3 - 6 * Math.sin(x * 0.045); ctx.beginPath(); ctx.moveTo(x, yy); ctx.lineTo(x - 2, yy - 6); ctx.moveTo(x, yy); ctx.lineTo(x + 3, yy - 5); ctx.stroke(); }
+      return;
+    }
     // alacsony udvari fal kapuval
     const wallTop = by - wh * 0.42;
     { const wg = ctx.createLinearGradient(0, wallTop, 0, by); wg.addColorStop(0, '#e2d3a6'); wg.addColorStop(1, '#a8966a'); ctx.fillStyle = wg; } ctx.fillRect(0, wallTop, w, by - wallTop);
@@ -496,12 +506,13 @@
       if (q.x < -50 || q.x > cam.W + 50) continue;
       const s = p.size * q.k;
       if (p.kind === 'smoke') { ctx.fillStyle = p.color; ctx.globalAlpha = a * 0.6; ctx.beginPath(); ctx.arc(q.x, q.y, s * (1.6 - a * 0.6), 0, TAU); ctx.fill(); ctx.globalAlpha = 1; }
-      else if (p.kind === 'fire') { ctx.fillStyle = p.color; ctx.globalAlpha = a; ctx.beginPath(); ctx.ellipse(q.x, q.y, s * a * 0.8, s * a * 1.3, 0, 0, TAU); ctx.fill(); ctx.globalAlpha = 1; }
+      else if (p.kind === 'fire') { ctx.globalCompositeOperation = 'lighter'; ctx.fillStyle = p.color; ctx.globalAlpha = a * 0.8; ctx.beginPath(); ctx.ellipse(q.x, q.y, s * a * 0.9, s * a * 1.4, 0, 0, TAU); ctx.fill(); ctx.globalAlpha = a * 0.25; ctx.beginPath(); ctx.arc(q.x, q.y, s * 2.2 * a, 0, TAU); ctx.fill(); ctx.globalCompositeOperation = 'source-over'; ctx.globalAlpha = 1; }
       else if (p.kind === 'text') { ctx.globalAlpha = a; ctx.font = `bold ${Math.max(12, q.k * p.size)}px "IM Fell English", Georgia, serif`; ctx.fillStyle = p.color; ctx.strokeStyle = '#2a170b'; ctx.lineWidth = 3; ctx.textAlign = 'center'; ctx.strokeText(p.text, q.x, q.y); ctx.fillText(p.text, q.x, q.y); ctx.globalAlpha = 1; }
       else if (p.kind === 'head' && p.fig) { const f = p.fig; ctx.save(); ctx.translate(q.x, q.y); ctx.rotate(p.rot); ctx.scale(q.k * (f.mirror ? -1 : 1), q.k); ctx.drawImage(f.img, f.sx, f.sy, f.sw, f.sh, -f.w / 2, -f.h / 2, f.w, f.h); ctx.restore(); }
       else if (p.kind === 'head') { ctx.save(); ctx.translate(q.x, q.y); ctx.rotate(p.rot); ctx.scale(q.k, q.k); S.face(ctx, { skin: p.skin, ph: 1, T: 0, state: 'dead', expr: 'dead' }, 0, -0.2, 0.2, {}); ctx.restore(); }
       else if (p.kind === 'gib') { ctx.save(); ctx.translate(q.x, q.y); ctx.rotate(p.rot); ctx.fillStyle = p.color; ctx.strokeStyle = '#2a170b'; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.ellipse(0, 0, s * 1.3, s * 0.7, 0, 0, TAU); ctx.fill(); ctx.stroke(); ctx.restore(); }
       else if (p.kind === 'conf') { ctx.save(); ctx.translate(q.x, q.y); ctx.rotate(p.rot); ctx.fillStyle = p.color; ctx.fillRect(-s, -s * 0.5, s * 2, s); ctx.restore(); }
+      else if (p.kind === 'slash') { const rr = p.size * q.k, a0 = a; ctx.save(); ctx.translate(q.x, q.y); ctx.rotate(-0.3); ctx.globalAlpha = a0; ctx.lineCap = 'round'; ctx.strokeStyle = p.color; ctx.lineWidth = Math.max(3, q.k * 0.09) * a0; ctx.beginPath(); ctx.arc(0, 0, rr, -2.1, 0.9); ctx.stroke(); ctx.lineWidth = Math.max(1.5, q.k * 0.04); ctx.strokeStyle = '#1c1310'; ctx.globalAlpha = a0 * 0.6; ctx.beginPath(); ctx.arc(0, 0, rr * 1.08, -2.0, 0.8); ctx.stroke(); ctx.restore(); }
       else if (p.kind === 'spark') { ctx.fillStyle = p.color; ctx.globalAlpha = a; ctx.fillRect(q.x - s * 0.5, q.y - s * 0.5, s, s); ctx.globalAlpha = 1; }
       else { ctx.fillStyle = p.color; ctx.beginPath(); ctx.arc(q.x, q.y, Math.max(1.2, s), 0, TAU); ctx.fill(); }
     }
@@ -596,7 +607,12 @@
     drawMarkers();
     if (W.dragonFx) {
       const d = W.dragonFx, p = W.P(d.x, d.y, d.z), key = 'dragon_' + (d.pose || 'front');
-      if (Figures.extra(key)) { const fl = Math.sin(W.time * 8) * 0.03; ctx.save(); ctx.translate(p.x, p.y); ctx.scale(p.k * (1 + fl), p.k * (1 - fl)); ctx.globalAlpha = 1; Figures.sprite(ctx, key, d.h || 3.4, 0); ctx.restore(); }
+      if (Figures.extra(key)) {
+        const flap = Math.sin(W.time * (d.y > 1.5 ? 9 : 5)) * 0.04, step = d.walk ? Math.sin(W.time * 9) : 0, br = d.breath ? Math.sin(W.time * 22) * 0.015 : 0;
+        shadow(d.x, d.z, 1.4 * (1 - Math.min(0.6, d.y * 0.1)), 0.35);
+        ctx.save(); ctx.translate(p.x, p.y - Math.abs(step) * 0.14 * p.k); ctx.rotate(step * 0.05 + (d.y > 1.5 ? Math.sin(W.time * 3) * 0.03 : 0)); ctx.scale(p.k * (1 + flap + br), p.k * (1 - flap * 0.8 - br)); Figures.sprite(ctx, key, d.h || 3.4, 0); ctx.restore();
+        if (d.breath) { const gp = W.P(d.x, d.y + (d.h || 3.4) * 0.48, d.z), gg = ctx.createRadialGradient(gp.x, gp.y, 0, gp.x, gp.y, gp.k * 1.6); gg.addColorStop(0, 'rgba(255,170,40,.55)'); gg.addColorStop(1, 'rgba(255,100,0,0)'); ctx.fillStyle = gg; ctx.fillRect(gp.x - gp.k * 1.7, gp.y - gp.k * 1.7, gp.k * 3.4, gp.k * 3.4); }
+      }
       else { ctx.save(); ctx.translate(p.x, p.y); ctx.scale(p.k * (d.face || 1), p.k); S.dragon(ctx, d, W.time); ctx.restore(); }
     }
     if (W.crownFx) { const c = W.crownFx, p = W.P(c.x, c.y, c.z); S.crownGfx(ctx, p.x, p.y, p.k * 0.55); }
@@ -632,20 +648,22 @@
   }
   W.hover = -1;
   W.hitTest = function (px, py) {
-    // 1) kijelölt bábu szabályos célmezői élveznek elsőbbséget (mező vagy a rajta álló báb teste)
+    // 1) a kijelölt bábu szabályos célmezői élveznek elsőbbséget
     let pref = -1, pd = 1e9;
     for (const t of W.hl.targets) {
-      const q = W.sqPos(t.sq), b = W.P(q.x, 0.5, q.z);
-      if (inQuad(px, py, sqQuad(t.sq))) { const d = Math.hypot(px - b.x, py - b.y) * 0.5; if (d < pd) { pd = d; pref = t.sq; } }
-      else if (t.cap && Math.hypot(px - b.x, (py - b.y) * 0.8) < b.k * 0.4) { const d = Math.hypot(px - b.x, py - b.y); if (d < pd) { pd = d; pref = t.sq; } }
+      const q = W.sqPos(t.sq), b = W.P(q.x, 0.5, q.z), onSq = inQuad(px, py, sqQuad(t.sq));
+      let hit = onSq; if (!hit && t.cap) { const e = W.pieceAt(t.sq); if (e) { const f = W.P(e.x, 0, e.z), hh = S.HEIGHT[e.type] * f.k; hit = Math.abs(px - f.x) < f.k * 0.45 && py < f.y + f.k * 0.2 && py > f.y - hh; } }
+      if (hit) { const d = Math.hypot(px - b.x, py - b.y); if (d < pd) { pd = d; pref = t.sq; } }
     }
     if (pref >= 0) return pref;
-    let best = -1, bd = 1e9;
+    // 2) bábu: a teljes rajzolt alak; egymást fedő bábuknál az nyer, amelyiknek van lépése (majd a közelebbi)
+    const cand = [];
     for (const e of W.pieces) {
-      const p = W.P(e.x, 0.5, e.z), d = Math.hypot(px - p.x, (py - p.y) * 0.8);
-      if (d < p.k * 0.5 && d < bd) { bd = d; best = e.sq; }
+      const f = W.P(e.x, 0, e.z), hh = S.HEIGHT[e.type] * f.k;
+      if (Math.abs(px - f.x) < f.k * 0.42 && py < f.y + f.k * 0.22 && py > f.y - hh) cand.push({ sq: e.sq, y: f.y });
     }
-    if (best >= 0) return best;
+    cand.sort((a, b) => b.y - a.y);
+    if (cand.length) { const ok = W.selectable ? cand.find(c => W.selectable(c.sq)) : null; return (ok || cand[0]).sq; }
     for (let sq = 0; sq < 64; sq++) if (inQuad(px, py, sqQuad(sq))) return sq;
     return -1;
   };

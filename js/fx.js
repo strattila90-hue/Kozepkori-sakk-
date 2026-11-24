@@ -49,17 +49,23 @@
   }
 
   async function strike(x, y, ux, uz, o) {
-    W.faceTo(x, y.x); x.atk = 0; x.busyAnim = true;
-    await tw(x, { atk: 0.5 }, 0.26, ease.lin, (ob, p) => { x.ox = ux * 0.16 * p; x.oz = uz * 0.16 * p; });
+    W.faceTo(x, y.x, y.z); x.atk = 0; x.busyAnim = true;
+    // 1) ráfeszülés: hátrahúzza a fegyvert
+    await tw(x, { atk: 0.4 }, 0.28, ease.eout, (ob, p) => { x.ox = -ux * 0.1 * p; x.oz = -uz * 0.1 * p; });
+    // 2) előrelendül és a szúrás
+    SFX.whoosh();
+    await tw(x, { atk: 0.55 }, 0.09, ease.lin, (ob, p) => { x.ox = ux * (-0.1 + 0.42 * p); x.oz = uz * (-0.1 + 0.42 * p); });
     const hx = y.x, hz = y.z, hy = S.HEIGHT[y.type] * 0.55;
+    W.part({ kind: 'slash', x: (x.x + hx) / 2, y: hy + 0.1, z: (x.z + hz) / 2, vx: 0, vy: 0, vz: 0, g: 0, life: 0.22, size: 0.7, rot: Math.atan2(uz, ux), color: o.blood ? '#ffffff' : '#ffe9a0' });
     if (o.blood) {
-      SFX.stab(); y.hurt = 1; blood(hx, hy, hz, o.lethal ? 22 : 10, ux, uz, 1.5); W.decal(hx + rnd(-0.3, 0.3), hz + rnd(-0.3, 0.3), 0.15);
-      W.say(y, o.lethal ? L.pick('dying') : L.pick('hurt'), o.lethal ? 2.6 : 1.5); if (Math.random() < 0.5) SFX.ow(); W.shake = Math.max(W.shake, o.lethal ? 0.6 : 0.25);
-    } else { SFX.clang(); sparks(hx, hy, hz); y.hurt = 0.6; }
-    y.ox = ux * 0.13; y.oz = uz * 0.13;
+      SFX.stab(); y.hurt = 1; W.decal(hx + rnd(-0.3, 0.3), hz + rnd(-0.3, 0.3), 0.15);
+      for (let i = 0; i < (o.lethal ? 34 : 16); i++) W.part({ kind: 'blood', x: hx - ux * 0.2, y: hy + rnd(-0.3, 0.3), z: hz - uz * 0.2, vx: ux * rnd(1.5, 4.5) + rnd(-1, 1), vy: rnd(0.8, 3.4), vz: uz * rnd(1.5, 4.5) + rnd(-1, 1), g: 10, size: rnd(0.035, 0.09), color: pick(['#a50f0f', '#c01616', '#8a0a0a']), life: 1.3 });
+      W.say(y, o.lethal ? L.pick('dying') : L.pick('hurt'), o.lethal ? 2.6 : 1.5); if (Math.random() < 0.5) SFX.ow(); W.shake = Math.max(W.shake, o.lethal ? 0.7 : 0.3);
+    } else { SFX.clang(); sparks(hx, hy, hz); sparks(hx, hy, hz); y.hurt = 0.6; }
+    // 3) az áldozat hátratántorodik és megdől, a támadó visszahúzódik
     await Promise.all([
-      tw(x, { atk: 1 }, 0.2, ease.lin, (ob, p) => { x.ox = ux * 0.16 * (1 - p); x.oz = uz * 0.16 * (1 - p); }),
-      tw(y, { hurt: 0, ox: 0, oz: 0 }, 0.3),
+      tw(x, { atk: 1 }, 0.22, ease.lin, (ob, p) => { x.ox = ux * 0.32 * (1 - p); x.oz = uz * 0.32 * (1 - p); }),
+      tw(y, { ox: ux * 0.28, oz: uz * 0.28, rot: (W.flip ? -1 : 1) * ((ux * (W.flip ? -1 : 1) >= 0) ? 0.2 : -0.2) }, 0.12, ease.eout).then(() => tw(y, { hurt: 0, ox: 0, oz: 0, rot: 0 }, 0.34, ease.eio)),
     ]);
     x.atk = 0; x.ox = 0; x.oz = 0; x.busyAnim = false;
   }
@@ -299,10 +305,17 @@
     }
   }
   async function burnDie(e) {
-    e.busyAnim = true; e.burn = 1; SFX.scream();
-    for (let i = 0; i < 4; i++) { W.say(e, L.pick('burn'), 0.9); await hop(e, clamp(e.x + rnd(-1.2, 1.2), -3.5, 3.5), clamp(e.z + rnd(-1.2, 1.2), -3.5, 3.5), 0.35, 0.35, 1); }
-    e.state = 'dead'; e.cheering = false; await tw(e, { rot: pick([-1.5, 1.5]) }, 0.4, ease.ein); SFX.thud();
-    W.every(3, 0.08, () => W.part({ kind: 'smoke', x: e.x + rnd(-0.3, 0.3), y: 0.2, z: e.z, vx: rnd(-0.1, 0.1), vy: 0.6, vz: 0, g: 0, drag: 0.5, size: 0.12, color: '#3a3532', life: 1.3 }));
+    e.busyAnim = true; e.cheering = false; e.expr = 'pain'; SFX.scream(); W.say(e, L.pick('burn'), 1.1);
+    tw(e, { burn: 0.96 }, 2.6, ease.lin);
+    for (let i = 0; i < 5; i++) {
+      if (i % 2 === 0) W.say(e, L.pick('burn'), 0.8);
+      await hop(e, clamp(e.x + rnd(-1.3, 1.3), -3.5, 3.5), clamp(e.z + rnd(-1.3, 1.3), -3.5, 3.5), 0.42, 0.5, 2);
+    }
+    e.state = 'dead'; e.hurt = 0; await tw(e, { rot: pick([-1.5, 1.5]) }, 0.45, ease.ein); SFX.thud(); W.shake = Math.max(W.shake, 0.3);
+    for (let i = 0; i < 14; i++) W.part({ kind: 'smoke', x: e.x + rnd(-0.4, 0.4), y: 0.15, z: e.z + rnd(-0.3, 0.3), vx: rnd(-0.4, 0.4), vy: rnd(0.4, 1.2), vz: rnd(-0.3, 0.3), g: -0.1, drag: 0.6, size: rnd(0.15, 0.3), color: '#2a2522', life: rnd(1.4, 2.6) });
+    for (let i = 0; i < 10; i++) W.part({ kind: 'spark', x: e.x, y: 0.2, z: e.z, vx: rnd(-1.5, 1.5), vy: rnd(1, 3), vz: rnd(-1.5, 1.5), g: 6, size: 0.05, color: pick(['#ff7a1a', '#ffd04a']), life: 0.8 });
+    await tw(e, { burn: 1 }, 0.8, ease.lin);
+    W.every(5, 0.12, () => W.part({ kind: 'smoke', x: e.x + rnd(-0.3, 0.3), y: 0.2, z: e.z + rnd(-0.2, 0.2), vx: rnd(-0.1, 0.1), vy: 0.7, vz: 0, g: 0, drag: 0.5, size: 0.1, color: '#3a3532', life: 1.4 }));
     e.busyAnim = false;
   }
   async function dragonFate(loser) {
@@ -310,24 +323,26 @@
     const out = zr < 0 ? -1 : 1, cs = W.flip ? -1 : 1, toCam = dz => dz * cs > 0, mode = W.debugDragon || pick(['burn', 'eat']);
     const d = W.dragonFx = { x: 0, y: 7.5, z: out * 15, pose: toCam(-out) ? 'front' : 'back', h: 3.6, breath: false };
     SFX.roar(); toast('Jön a sárkány!', 'bad'); W.setCheer(4);
-    await tw(d, { x: 0, y: 2.6, z: zr + out * 2.1 }, 1.7, ease.eout);
+    d.walk = false; await tw(d, { x: 0, y: 2.6, z: zr + out * 2.1 }, 1.7, ease.eout);
     const faceCam = toCam(-out); d.pose = faceCam ? 'front' : 'back';
-    const mouthFire = (dur, sweep) => {
-      d.pose = faceCam ? 'fire' : 'back';
-      W.every(dur, 0.018, () => {
-        const mx = d.x, my = d.y + d.h * 0.5;
-        W.part({ kind: 'fire', x: mx + rnd(-0.2, 0.2), y: my, z: d.z - out * 0.2, vx: rnd(-0.5, 0.5), vy: rnd(-2.4, -0.8), vz: -out * rnd(2.2, 3.8), g: 0, size: rnd(0.25, 0.5), color: pick(['#ff5a1f', '#ffb52e', '#ffe34a']), life: 0.7 });
+    const mouthFire = (dur) => {
+      d.pose = faceCam ? 'fire' : 'back'; d.breath = true;
+      W.every(dur, 0.012, () => {
+        const mx = d.x, my = d.y + d.h * 0.48;
+        for (let k = 0; k < 3; k++) W.part({ kind: 'fire', x: mx + rnd(-0.15, 0.15), y: my + rnd(-0.1, 0.1), z: d.z - out * 0.3, vx: rnd(-0.9, 0.9), vy: rnd(-2.6, -0.6), vz: -out * rnd(2.0, 4.6), g: 0, size: rnd(0.28, 0.6), color: pick(['#ff4a12', '#ff8a1f', '#ffc83a', '#ffee70']), life: rnd(0.55, 0.95) });
+        if (Math.random() < 0.3) W.part({ kind: 'smoke', x: mx, y: my, z: d.z - out * 0.6, vx: rnd(-0.5, 0.5), vy: rnd(0.2, 1), vz: -out * rnd(1, 2.5), g: -0.2, drag: 1, size: 0.25, color: '#3a2f28', life: 1.2 });
       });
+      W.every(dur, 0.25, () => { W.shake = Math.max(W.shake, 0.18); });
     };
     if (mode === 'burn') {
       SFX.fire(); SFX.roar(); const done = [];
-      d.x = -4.8; mouthFire(4.6);
+      d.x = -4.8; mouthFire(4.6); d.walk = true;
       W.every(4.6, 0.03, () => { for (const e of ps) if (!done.includes(e) && Math.abs(d.x - e.x) < 1.2) { done.push(e); burnDie(e); } });
-      await tw(d, { x: 4.8 }, 4.6, ease.lin);
+      await tw(d, { x: 4.8 }, 4.6, ease.lin); d.walk = false; d.breath = false;
       for (const e of ps) if (!done.includes(e)) { done.push(e); burnDie(e); }
     } else {
       for (const e of ps) {
-        await tw(d, { x: e.x, z: e.z + out * 1.7, y: 1.1 }, 0.55, ease.eio);
+        d.walk = true; await tw(d, { x: e.x, z: e.z + out * 1.7, y: 0.9 }, 0.6, ease.eio); d.walk = false; SFX.thud(); W.shake = Math.max(W.shake, 0.35);
         d.pose = faceCam ? 'fire' : 'back'; SFX.roar(); await wait(0.18);
         SFX.squish(); SFX.nom(); setTimeout(() => SFX.nom(), 160); blood(e.x, 0.9, e.z, 26, 0, 0, 1.6); for (let i = 0; i < 3; i++) W.decal(e.x + rnd(-0.5, 0.5), e.z + rnd(-0.5, 0.5), rnd(0.2, 0.45));
         W.part({ kind: 'text', text: pick(['NYAM!', 'ROPP!', 'CSATT!', 'Ropogós!']), x: e.x, y: 2.3, z: e.z, vy: 1.6, g: 0, life: 1.1, size: 0.34, color: '#ffd24a' }); W.shake = 0.5;

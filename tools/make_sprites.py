@@ -70,13 +70,13 @@ def tint(img, army, ptype):
     dark = (s < 0.45) & (v > 0.12) & (v < 0.52)   # sötét ruha (püspök)
     H2, S2, V2 = h.copy(), s.copy(), v.copy()
     if army == 'white':
-        H2[red] = 0.115; S2[red] = 0.14 + 0.1 * s[red]; V2[red] = np.minimum(1, 0.62 + 0.45 * v[red])
+        H2[red] = 0.58; S2[red] = 0.30 + 0.2 * s[red]; V2[red] = np.minimum(1, 0.72 + 0.35 * v[red])
         H2[blue] = 0.47; S2[blue] = 0.22; V2[blue] = np.minimum(1, 0.5 + 0.55 * v[blue])
         if ptype == 'B':
             w = np.clip((0.62 - v) / 0.25, 0, 1) * np.clip((v - 0.07) / 0.1, 0, 1) * (s < 0.6)
             V2 = v * (1 - w) + np.minimum(1, 0.42 + v * 1.3) * w; S2 = s * (1 - w) + 0.1 * w; H2 = np.where(w > 0, 0.1, H2)
     elif army == 'black':
-        H2[red] = 0.76; S2[red] = 0.62; V2[red] = np.minimum(1, v[red] * 0.62)
+        H2[red] = 0.77; S2[red] = 0.72; V2[red] = np.minimum(1, v[red] * 0.7)
         H2[blue] = 0.72; S2[blue] = 0.8; V2[blue] = np.minimum(1, v[blue] * 0.78)
     elif army == 'red' and ptype == 'B':
         w = np.clip((0.62 - v) / 0.25, 0, 1) * np.clip((v - 0.07) / 0.1, 0, 1) * (s < 0.6)
@@ -94,6 +94,8 @@ def tint(img, army, ptype):
         for army_, hh, ss, vm in (('black', 0.72, 0.3, 0.42), ('red', 0.0, 0.42, 0.9), ('gold', 0.115, 0.6, 1.0)):
             if army == army_:
                 H2 = np.where(w > 0.01, hh, H2); S2 = s * (1 - w) + ss * w; V2 = v * (1 - w) + np.minimum(1, v * vm) * w
+    boost = (S2 > 0.18)
+    S2 = np.where(boost, np.minimum(1, S2 * 1.28 + 0.06), S2); V2 = np.where(boost & (V2 < 0.97), np.minimum(1, V2 * 1.06), V2)
     out = hsv2rgb(H2, S2, V2)
     res = np.dstack([out, al])
     return Image.fromarray((np.clip(res, 0, 1) * 255).astype(np.uint8), 'RGBA')
@@ -101,7 +103,8 @@ def tint(img, army, ptype):
 def main():
     os.makedirs(OUT, exist_ok=True); meta = {}
     EX = {'x_castle': (None, 420), 'x_tavern': (None, 420), 'x_pigfarm': (None, 360), 'x_crowd1': (0.755, 360), 'x_crowd2': (0.69, 360), 'x_crowd4': (0.765, 360)}
-    for f in sorted(glob.glob(os.path.join(SRC, 'x_*.jpg'))):
+    import sys
+    for f in ([] if 'figs' in sys.argv else sorted(glob.glob(os.path.join(SRC, 'x_*.jpg')))):
         key = os.path.basename(f)[:-4]; cy, hh = EX.get(key, (None, 420 if 'dragon' in key else 320))
         im = cut(f, hh, cy); im.save(os.path.join(OUT, key + '.webp'), 'WEBP', quality=84, method=6); meta[key] = {'w': im.width, 'h': im.height}; print(key, im.size)
     for f in sorted(glob.glob(os.path.join(SRC, '[A-Z]_*.jpg'))):

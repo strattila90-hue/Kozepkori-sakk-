@@ -190,9 +190,9 @@
   function select(sq) {
     G.sel = sq; W.hl.sel = sq;
     W.hl.targets = G.chess.moves().filter(m => m.from === sq).map(m => ({ sq: m.to, cap: !!m.cap })).filter((t, i, a) => a.findIndex(x => x.sq === t.sq) === i);
-    SFX.hop();
+    SFX.hop(); updateHud();
   }
-  function deselect() { G.sel = -1; W.hl.sel = -1; W.hl.targets = []; }
+  function deselect() { G.sel = -1; W.hl.sel = -1; W.hl.targets = []; updateHud(); }
   function onSquare(sq) {
     if (!canAct()) return;
     const piece = G.chess.board[sq];
@@ -227,7 +227,14 @@
     if (!G.over) { const th = S.THEMES[G.themeIds[G.chess.turn]]; t.innerHTML = '<span class="sw" style="background:' + th.hex + ';margin-right:8px"></span>' + t.textContent; t.style.borderColor = th.hex; }
     $('oppStat').textContent = ''; $('meStat').textContent = '';
     W.hl.check = G.chess.inCheck() ? G.chess.kingSq(G.chess.turn) : -1;
+    let hint = ''; const hel = $('hint');
+    if (G.over) hint = ''; else if (G.mode === 'online' && !(G.room && G.room.guestId)) hint = 'Várunk az ellenfélre…';
+    else if (!(G.mode === 'local' || mine)) hint = 'Az ellenfél lép – nézd a nyilat!';
+    else if (G.sel >= 0) hint = 'Koppints a zöld pontra (lépés) vagy a piros célkeresztre (ütés). Máshová koppintva visszavonod.';
+    else hint = 'Koppints egy saját bábura (arany gyűrűvel jelölt).';
+    hel.textContent = hint;
   }
+  W.selectable = sq => { try { if (!canAct()) return false; const pc = G.chess.board[sq]; if (!pc || Chess.colorOf(pc) !== G.chess.turn) return false; if (G.mySide && Chess.colorOf(pc) !== G.mySide) return false; return G.chess.moves().some(m => m.from === sq); } catch (e) { return false; } };
   function initInput() {
     const c = W.getCanvas();
     // érintés / egér: koppintás = kijelölés, két ujj = nagyítás, nagyítva egy ujj = mozgatás
