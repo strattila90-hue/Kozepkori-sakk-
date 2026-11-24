@@ -32,7 +32,7 @@
       for (let r = 0; r < n; r++) for (let c = 0; c < n; c++) if (qr.isDark(r, c)) g.fillRect(off + c * px, off + r * px, px, px);
     } catch (e) { console.warn('QR', e); }
   }
-  const APP_V = '0.9.7'; let deferredInstall = null, swReg = null, newWorker = null;
+  const APP_V = '0.9.8'; let deferredInstall = null, swReg = null, newWorker = null;
   const isStandalone = () => window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone;
   function showUpdateBanner(txt) {
     if ($('updBanner')) return; const d = document.createElement('div'); d.id = 'updBanner'; d.innerHTML = '<span></span><button>Betöltöm!</button>'; d.firstChild.textContent = txt; d.lastChild.onclick = applyUpdate; document.body.appendChild(d);
@@ -101,6 +101,8 @@
   const TALK_NAME = { many: 'sok', few: 'kevés', off: 'csend' };
   function paintTalk() { $('talkSeg').querySelectorAll('button').forEach(x => x.classList.toggle('on', x.dataset.v === W.talk)); $('bTalk').querySelector('small').textContent = 'Szó: ' + TALK_NAME[W.talk]; $('bTalk').classList.toggle('off', W.talk === 'off'); }
   function paintMusic() { $('bMusic').classList.toggle('off', !SFX.musicOn()); $('optMusic').checked = SFX.musicOn(); }
+  /* szobakód: betűnként külön, jól olvasható kockában (a gót betű olvashatatlan volt) */
+  function showCode(code) { const el = $('lobbyCode'); el.textContent = ''; for (const ch of String(code)) { const s = document.createElement('span'); s.textContent = ch; el.appendChild(s); } el.setAttribute('aria-label', 'Szobakód: ' + String(code).split('').join(' ')); }
   function paintSw() { $('swatches').querySelectorAll('button').forEach(b => b.classList.toggle('on', b.dataset.id === myTheme)); }
   const FUNNY = ['Pocak Pista', 'Büdös Bence', 'Sáros Sanyi', 'Kövér Kata', 'Orrfúró Ödön', 'Mókus Jóska', 'Pukizó Pál', 'Rühes Rozi', 'Csorba Gyuri', 'Kecskepásztor Kelemen'];
   const myName = () => { let n = Proto.cleanName($('name').value, ''); if (!n) { n = FUNNY[Math.floor(Math.random() * FUNNY.length)]; $('name').value = n; } store.set('ps_name', n); return n; };
@@ -147,7 +149,7 @@
       UI.toast('Vár nyitása…');
       const code = await Net.createRoom({ name: myName(), theme: myTheme, side });
       G.code = code; G.role = 'host'; store.set('ps_session', JSON.stringify({ code }));
-      $('lobbyCode').textContent = code; drawQR(code); show('lobby'); watchRoom(code);
+      showCode(code); drawQR(code); show('lobby'); $('toast').className = ''; watchRoom(code);
     } catch (e) { UI.toast(e.message || 'Hiba', 'bad'); console.error(e); }
   }
   async function joinOnline(code) {
@@ -156,7 +158,7 @@
     try {
       const r = await Net.joinRoom(code, { name: myName(), theme: myTheme });
       G.code = code; G.role = r.role; store.set('ps_session', JSON.stringify({ code }));
-      if (r.role === 'host' && !r.data.guestId) { $('lobbyCode').textContent = code; drawQR(code); show('lobby'); }
+      if (r.role === 'host' && !r.data.guestId) { showCode(code); drawQR(code); show('lobby'); $('toast').className = ''; }
       watchRoom(code);
     } catch (e) { UI.toast(e.message || 'Hiba', 'bad'); console.error(e); }
   }

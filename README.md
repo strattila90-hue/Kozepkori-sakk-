@@ -22,6 +22,9 @@ Fehér · Fekete · Vörös · Arany (mindenki a sajátját választja; azonos v
 - A győztes királyát megkoronázzák; a vesztes seregét **sárkány** elégeti, **hóhér** lefejezi, vagy egymást **nyakon szúrják**.
 - Döntetlennél a **Fekete Halál** visz el mindenkit.
 
+## v0.9.8
+- **Olvasható szobakód:** a váróteremben a kód betűnként, külön kockában, jól olvasható betűvel jelenik meg (a gót betű olvashatatlan volt); a kódbeíró mező is ilyen betűt használ. A felugró értesítések is olvashatóbb betűt kaptak, és a „Vár nyitása…” felirat már nem csúszik rá a kódra.
+
 ## v0.9.7 újdonságai
 - **Szövegbuborékok nem takarják a táblát:** kisebbek, legfeljebb 2 sorosak, a bábuk fölött, egymást nem fedik, egyszerre legfeljebb 3 látszik, és lépésválasztás közben a háttér-fecsegés elhalványul. Menüben és a játékban (**Szó** gomb) állítható: *Sok* / *Kevés* (csak harc, sakk, végjáték – alapérték) / *Csend*.
 - **Középkori zene:** saját, dór/eol hangnemű dallamok furulyaszerű hangon, tekerőlant-szerű bordóval, lant-pengetéssel és dobbal (WebAudio, nincs hangfájl). Menüzene és csatazene; a **Lant** gomb vagy a menü kapcsolója némítja.
