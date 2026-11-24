@@ -23,7 +23,8 @@ t('FEN körbejárás', () => { const g = new Chess(); play(g, ['e2e4', 'c7c5', '
 
 console.log('Szövegek');
 global.window = global; require(path.join(ROOT, 'js/lines.js'));
-t('minden kategória nem üres, nincs egymás utáni ismétlés', () => { for (const c of ['engage', 'reply', 'taunt', 'idle', 'hurt', 'dying', 'crowd', 'check', 'promo', 'win', 'beg', 'burn', 'betray', 'scav', 'execution', 'plague', 'castle', 'butcher', 'pig', 'prisoner', 'torturer']) { let prev = null; for (let i = 0; i < 40; i++) { const s = L.pick(c); if (!s || s === '...') throw new Error(c + ' üres'); if (s === prev) throw new Error(c + ' ismétlődik'); prev = s; } } });
+t('minden kategória nem üres, nincs egymás utáni ismétlés', () => { for (const c of ['engage', 'reply', 'taunt', 'idle', 'hurt', 'dying', 'crowd', 'check', 'promo', 'win', 'beg', 'burn', 'betray', 'scav', 'execution', 'plague', 'castle', 'insult', 'butcher', 'pig', 'prisoner', 'torturer']) { let prev = null; for (let i = 0; i < 40; i++) { const s = L.pick(c); if (!s || s === '...') throw new Error(c + ' üres'); if (s === prev) throw new Error(c + ' ismétlődik'); prev = s; } } });
+t('nincs etnikai/faji gúny a szövegekben', () => { const s = fs.readFileSync(path.join(ROOT, 'js/lines.js'), 'utf8').toLowerCase(); for (const w of ['cigány', 'zsidó', 'néger', 'buzi']) if (s.includes(w)) throw new Error('tiltott szó: ' + w); });
 t('buborék-hossz korlátos', () => eq(L.dur('x'.repeat(200)) <= 4.2, true));
 
 console.log('Online adat-ellenőrzés (js/protocol.js)');

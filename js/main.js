@@ -16,6 +16,15 @@
 
   /* ---------- QR, verzió, telepítés ---------- */
   const roomUrl = code => location.origin + location.pathname.replace(/index\.html$/, '') + '?room=' + code;
+  const baseUrl = () => location.origin + location.pathname.replace(/index\.html$/, '');
+  /** Megosztás: a készülék saját megosztó lapja (ha van), különben a link vágólapra másolása. */
+  async function shareGame(text) {
+    const url = baseUrl();
+    try {
+      if (navigator.share) { await navigator.share({ title: 'Parasztsakk', text, url }); return; }
+      await navigator.clipboard.writeText(text + ' ' + url); UI.toast('Hírnök-levél a vágólapon!');
+    } catch (e) { if (e && e.name === 'AbortError') return; try { await navigator.clipboard.writeText(url); UI.toast('A link a vágólapon!'); } catch (_e) { UI.toast(url); } }
+  }
   function drawQR(code) {
     try {
       const qr = qrcode(0, 'M'); qr.addData(roomUrl(code)); qr.make(); const n = qr.getModuleCount(), cv = $('qrCanvas'), q = 4, px = Math.floor(cv.width / (n + 2 * q)), off = Math.floor((cv.width - px * n) / 2), g = cv.getContext('2d');
@@ -23,7 +32,7 @@
       for (let r = 0; r < n; r++) for (let c = 0; c < n; c++) if (qr.isDark(r, c)) g.fillRect(off + c * px, off + r * px, px, px);
     } catch (e) { console.warn('QR', e); }
   }
-  const APP_V = '0.9.5'; let deferredInstall = null, swReg = null, newWorker = null;
+  const APP_V = '0.9.6'; let deferredInstall = null, swReg = null, newWorker = null;
   const isStandalone = () => window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone;
   function showUpdateBanner(txt) {
     if ($('updBanner')) return; const d = document.createElement('div'); d.id = 'updBanner'; d.innerHTML = '<span></span><button>Betöltöm!</button>'; d.firstChild.textContent = txt; d.lastChild.onclick = applyUpdate; document.body.appendChild(d);
@@ -81,6 +90,8 @@
       const url = roomUrl(G.code);
       try { if (navigator.share) await navigator.share({ title: 'Parasztsakk', text: 'Gyere sakkozni, paraszt! Kód: ' + G.code, url }); else { await navigator.clipboard.writeText(url); UI.toast('Hírnök-levél másolva!'); } } catch (e) { /* mégse */ }
     };
+    $('btnShareGame').onclick = () => shareGame('Parasztsakk – véres, büdös, szabályos sakk. Gyere játszani, paraszt!');
+    $('btnShareRes').onclick = () => shareGame(G.mySide && G.over ? 'Parasztsakk: ' + $('resTitle').textContent + ' Gyere, mérkőzz meg velem!' : 'Parasztsakk – gyere, mérkőzz meg velem!');
     $('btnLobbyCancel').onclick = toMenu; $('btnToMenu').onclick = toMenu; $('bMenu').onclick = () => { if (G.over || confirm('Elhagyod a csatamezőt?')) toMenu(); };
     $('btnAgain').onclick = () => { if (G.mode === 'bot') startBot(G.level); else if (G.mode === 'local') startLocal(); else toMenu(); };
   }
