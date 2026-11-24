@@ -96,6 +96,28 @@ let pass = 0, fail = 0; const ok = (n, c, info) => { c ? pass++ : fail++; consol
     await tapSq(A, 11, 0.7).catch(() => {});   // fekete (a másik játékos) lép: a gazda nézetében is érvényes marad a sor
     await c.close();
   }
+  console.log('Buborékok, zene (v0.9.7)');
+  {
+    const c4 = await b.newContext({ viewport: { width: 430, height: 900 } }); const P = await mk(c4);
+    await P.click('#btnLocal'); await P.waitForTimeout(800);
+    const bb = await P.evaluate(() => {
+      W.idleOn = false; const e = W.pieces[0], r = {};
+      W.setTalk('off'); W.say(e, 'teszt', 2); r.off = e.say === null;
+      W.setTalk('few'); W.sayIdle(e, 'fecsegés', 2); r.fewIdle = e.say === null; W.say(e, 'harc', 2); r.fewFight = !!e.say;
+      W.setTalk('many'); W.pieces.slice(0, 12).forEach((p, i) => W.sayIdle(p, 'Ez egy jó hosszú beszólás, hogy két sorba törjön meg ' + i, 3));
+      W.time += 0.5;   // a beúszás (fade-in) után
+      // a buborékok a legfelső rétegben: a rajzolás után a sor üres, és legfeljebb 3 jelent meg
+      let drawn = 0; const ft = CanvasRenderingContext2D.prototype.fillText; CanvasRenderingContext2D.prototype.fillText = function (t) { if (/beszólás|…/.test(t)) drawn++; return ft.apply(this, arguments); };
+      W._renderOnce(); CanvasRenderingContext2D.prototype.fillText = ft; r.drawnLines = drawn; return r;
+    });
+    ok('„Csend" mellett nincs buborék', bb.off, bb);
+    ok('„Kevés" mellett nincs háttér-fecsegés, de a harci beszólás látszik', bb.fewIdle && bb.fewFight, bb);
+    ok('egyszerre legfeljebb 3 buborék (legfeljebb 2 sor mindegyikben)', bb.drawnLines > 0 && bb.drawnLines <= 6, bb);
+    await P.click('#bTalk'); ok('a Szó gomb lépteti a beállítást', /Szó: /.test(await P.textContent('#bTalk small')));
+    await P.click('#bMusic'); const mus = await P.evaluate(() => SFX.musicOn()); await P.click('#bMusic');
+    ok('a Lant gomb ki-be kapcsolja a zenét', mus === false && (await P.evaluate(() => SFX.musicOn())) === true);
+    await c4.close();
+  }
   ok('nincs oldal-hiba a teszt során', errs.length === 0, errs.slice(0, 3));
   await b.close(); srv.close(); console.log(`\nFüsttesztek: ${pass} sikeres, ${fail} hibás`); process.exit(fail ? 1 : 0);
 })();

@@ -22,6 +22,13 @@ Fehér · Fekete · Vörös · Arany (mindenki a sajátját választja; azonos v
 - A győztes királyát megkoronázzák; a vesztes seregét **sárkány** elégeti, **hóhér** lefejezi, vagy egymást **nyakon szúrják**.
 - Döntetlennél a **Fekete Halál** visz el mindenkit.
 
+## v0.9.7 újdonságai
+- **Szövegbuborékok nem takarják a táblát:** kisebbek, legfeljebb 2 sorosak, a bábuk fölött, egymást nem fedik, egyszerre legfeljebb 3 látszik, és lépésválasztás közben a háttér-fecsegés elhalványul. Menüben és a játékban (**Szó** gomb) állítható: *Sok* / *Kevés* (csak harc, sakk, végjáték – alapérték) / *Csend*.
+- **Középkori zene:** saját, dór/eol hangnemű dallamok furulyaszerű hangon, tekerőlant-szerű bordóval, lant-pengetéssel és dobbal (WebAudio, nincs hangfájl). Menüzene és csatazene; a **Lant** gomb vagy a menü kapcsolója némítja.
+- **Élethűbb hóhér:** csuklyás, izmos, bőrkötényes hóhér kétkezes szakállas bárddal; tuskó, térdelő király, dobpergés, lassú emelés, lesújtás, a fej a kosárba repül.
+- **Élethűbb disznóvágás:** lefogás a dikón, nyakszúrás, a vért tálban fogják fel (hurkának), szalmás perzselés, kaparás, felhasított fél disznó a gerendán.
+- **Szebb kép és mozgás:** fáklyafény-tócsák, porszemek a fényben, lakkfény a táblán; lágyabb, rugalmas ugrálás (lapul–nyúlik), simított képkocka-idő.
+
 ## Telepítés (GitHub Pages)
 Statikus oldal, build nincs. A repo beállításai → Pages → `main` (vagy a kívánt ág) / root.
 Helyben: `python3 -m http.server` majd `http://localhost:8000`.
@@ -42,7 +49,8 @@ Helyben: `python3 -m http.server` majd `http://localhost:8000`.
 | `js/sprites.js` | a karakterek procedurális rajza |
 | `js/world.js` | kamera, háttér, részecskék, tömeg, rajzolás |
 | `js/fx.js` | harc-, halál-, hullaelhurcolás-, idle- és végjáték-animációk |
-| `js/audio.js` | procedurális hangok (puki, orrfújás, szúrás, sárkány…) |
+| `js/audio.js` | procedurális hangok (puki, orrfújás, szúrás, sárkány…) és a középkori zene |
+| `js/scenes.js` | háttérjelenetek: disznóvágás, kínzás |
 | `js/net.js` | Firestore szobák |
 | `js/main.js` | menü, játékmódok, bemenet |
 
