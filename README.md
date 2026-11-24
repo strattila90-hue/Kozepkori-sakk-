@@ -22,6 +22,9 @@ Fehér · Fekete · Vörös · Arany (mindenki a sajátját választja; azonos v
 - A győztes királyát megkoronázzák; a vesztes seregét **sárkány** elégeti, **hóhér** lefejezi, vagy egymást **nyakon szúrják**.
 - Döntetlennél a **Fekete Halál** visz el mindenkit.
 
+## v1.3.1
+- **Olvasható név:** a díszes P iniciálé marad, a „Parasztsakk” szó többi része (és a címek: eredmény, krónika, menükártyák) a nehezen olvasható gót betű helyett jól olvasható gótikus Pirata One betűvel.
+
 ## v1.3.0 – Királyi Tábla
 - **Látványos tábla:** vastag, faragott diófa talapzat aranyszegéllyel és rozettákkal, vetett árnyék a földön, réz intarziacsíkok a mezők között, aranyszegélyes utolsó lépés, 8 másodpercenként végigsuhanó csillanás a lakkon, fénygyűrű és porfelhő, amikor egy bábu leér.
 - **Natív alkalmazás-érzés:** indítóképernyő töltéscsíkkal; rezgés kijelöléskor, leérkezéskor, ütéskor és sakknál (kikapcsolható); csata közben a képernyő nem alszik el; az Android vissza-gomb előbb a fiókot/krónikát zárja, csatában rákérdez; nincs véletlen szövegkijelölés és hosszú nyomásra felugró menü; rugós gombok, beúszó felület.
