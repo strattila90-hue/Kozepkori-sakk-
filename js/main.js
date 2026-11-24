@@ -32,21 +32,45 @@
       for (let r = 0; r < n; r++) for (let c = 0; c < n; c++) if (qr.isDark(r, c)) g.fillRect(off + c * px, off + r * px, px, px);
     } catch (e) { console.warn('QR', e); }
   }
-  const APP_V = '1.0.0'; let deferredInstall = null, swReg = null, newWorker = null;
+  const APP_V = '1.0.1'; let deferredInstall = null, swReg = null, newWorker = null;
   const isStandalone = () => window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone;
   function showUpdateBanner(txt) {
     if ($('updBanner')) return; const d = document.createElement('div'); d.id = 'updBanner'; d.innerHTML = '<span></span><button>Betöltöm!</button>'; d.firstChild.textContent = txt; d.lastChild.onclick = applyUpdate; document.body.appendChild(d);
   }
+  /* ---------- Automatikus frissítés ----------
+     Új kiadásnál (version.json vagy új service worker) magától betölti, ha épp nincs folyamatban csata;
+     csata közben megvárja, amíg a játékos a várba (menübe) tér vagy új csatát kezd. Hurokvédelem: ugyanarra a verzióra 10 percen belül csak egyszer próbál. */
+  let pendingVer = null, lastCheck = 0;
+  const autoOn = () => store.get('ps_autoupd') !== '0';
+  const inBattle = () => !!G.mode && !G.over;
   async function applyUpdate() {
-    try { if (swReg && swReg.waiting) swReg.waiting.postMessage('skip'); const ks = await caches.keys(); await Promise.all(ks.map(k => caches.delete(k))); if (swReg) await swReg.unregister(); } catch (e) { /* nincs SW */ }
+    if (window.__applyUpdateHook) return window.__applyUpdateHook();       // teszthez
+    try {
+      const files = ['index.html', 'style.css', 'version.json', 'sw.js'].concat([...document.scripts].map(sc => sc.getAttribute('src')).filter(Boolean));
+      await Promise.all(files.map(f => fetch(f, { cache: 'reload' }).catch(() => {})));      // a böngésző HTTP-gyorsítótára se adja a régit
+      if (swReg && swReg.waiting) swReg.waiting.postMessage('skip'); const ks = await caches.keys(); await Promise.all(ks.map(k => caches.delete(k))); if (swReg) await swReg.unregister();
+    } catch (e) { /* nincs SW / hálózat */ }
     location.reload();
   }
+  function updateFound(ver) {
+    pendingVer = ver || pendingVer || 'új';
+    if (!autoOn()) { showUpdateBanner('Új kiadás érkezett, jó uram: v' + pendingVer + '!'); return; }
+    let tried = {}; try { tried = JSON.parse(store.get('ps_upd_try') || '{}'); } catch (e) { /* */ }
+    if (tried.v === pendingVer && Date.now() - tried.t < 600000) { showUpdateBanner('Új kiadás: v' + pendingVer + ' – a betöltés nem sikerült, próbáld újra!'); return; }
+    if (inBattle()) { showUpdateBanner('Új kiadás (v' + pendingVer + '): a csata után magától betöltöm.'); return; }
+    store.set('ps_upd_try', JSON.stringify({ v: pendingVer, t: Date.now() }));
+    UI.toast('Új kiadás: v' + pendingVer + ' – betöltöm…'); setTimeout(applyUpdate, 1500);
+  }
+  /** a csata után (menübe lépéskor, új csata indításakor) a függő frissítés betöltése; igaz, ha frissít */
+  function updateIfPending() { if (!pendingVer || !autoOn()) return false; updateFound(pendingVer); return !inBattle(); }
+  window.__updState = () => ({ pendingVer, auto: autoOn() }); window.__checkUpdate = m => checkUpdate(m);
   async function checkUpdate(manual) {
+    lastCheck = Date.now();
     const btn = $('btnUpdate'), line = $('verLine'); if (manual) { btn.disabled = true; btn.textContent = 'A hírnök lován vágtat…'; }
     try {
       const r = await fetch('version.json?_=' + Date.now(), { cache: 'no-store' }); const j = await r.json();
       if (swReg) { try { await swReg.update(); } catch (e) { /* hálózat */ } }
-      if (j.version && j.version !== APP_V) { line.textContent = 'Új kiadás érkezett: v' + j.version + ' ' + (j.name || '') + ' (nálad: v' + APP_V + ')'; showUpdateBanner('Új kiadás érkezett, jó uram: v' + j.version + '!'); if (manual) { btn.textContent = 'Töltsd be az újat!'; btn.disabled = false; btn.onclick = applyUpdate; } }
+      if (j.version && j.version !== APP_V) { line.textContent = 'Új kiadás érkezett: v' + j.version + ' ' + (j.name || '') + ' (nálad: v' + APP_V + ')'; if (manual) { btn.textContent = 'Töltsd be az újat!'; btn.disabled = false; btn.onclick = applyUpdate; } else updateFound(j.version); }
       else { line.textContent = 'Naprakész vagy: v' + APP_V + ' „' + (j.name || '') + '"'; if (manual) { btn.textContent = 'A hírnök azt üzeni: nincs újság, uram.'; setTimeout(() => { btn.textContent = 'Hírnököt küldök: van-e új kiadás?'; btn.disabled = false; }, 2600); } }
     } catch (e) {
       line.textContent = 'Verzió: v' + APP_V + ' (a hírnök nem ért haza, nincs hálózat)'; if (manual) { btn.textContent = 'A hírnököt elfogták a rablók. Próbáld újra!'; setTimeout(() => { btn.textContent = 'Hírnököt küldök: van-e új kiadás?'; btn.disabled = false; }, 2800); }
@@ -55,13 +79,16 @@
   function initPwa() {
     $('verLine').textContent = 'Verzió: v' + APP_V; $('btnUpdate').onclick = () => checkUpdate(true);
     if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {
-      navigator.serviceWorker.register('sw.js').then(reg => { swReg = reg; reg.addEventListener('updatefound', () => { newWorker = reg.installing; if (newWorker) newWorker.addEventListener('statechange', () => { if (newWorker.state === 'installed' && navigator.serviceWorker.controller) showUpdateBanner('Új kiadás készen áll, jó uram!'); }); }); }).catch(() => {});
+      navigator.serviceWorker.register('sw.js').then(reg => { swReg = reg; reg.addEventListener('updatefound', () => { newWorker = reg.installing; if (newWorker) newWorker.addEventListener('statechange', () => { if (newWorker.state === 'installed' && navigator.serviceWorker.controller) updateFound(); }); }); }).catch(() => {});
     }
     window.addEventListener('beforeinstallprompt', e => { e.preventDefault(); deferredInstall = e; if (!isStandalone()) $('btnInstall').classList.remove('hidden'); });
     $('btnInstall').onclick = async () => { if (!deferredInstall) return; deferredInstall.prompt(); try { await deferredInstall.userChoice; } catch (e) { /* mégse */ } deferredInstall = null; $('btnInstall').classList.add('hidden'); };
     window.addEventListener('appinstalled', () => { $('btnInstall').classList.add('hidden'); UI.toast('A vár a tiéd, uram!'); });
     if (/iphone|ipad|ipod/i.test(navigator.userAgent) && !isStandalone()) $('iosNote').classList.remove('hidden');
     checkUpdate(false);
+    setInterval(() => { if (!document.hidden) checkUpdate(false); }, 10 * 60000);                     // 10 percenként
+    document.addEventListener('visibilitychange', () => { if (!document.hidden && Date.now() - lastCheck > 60000) checkUpdate(false); });   // visszatéréskor
+    $('optAutoUpd').checked = autoOn(); $('optAutoUpd').onchange = e => { store.set('ps_autoupd', e.target.checked ? '1' : '0'); if (e.target.checked && pendingVer) updateFound(pendingVer); };
   }
 
   /* ---------- Menü ---------- */
@@ -96,7 +123,7 @@
     $('btnShareGame').onclick = () => shareGame('Parasztsakk – véres, büdös, szabályos sakk. Gyere játszani, paraszt!');
     $('btnShareRes').onclick = () => shareGame(G.mySide && G.over ? 'Parasztsakk: ' + $('resTitle').textContent + ' Gyere, mérkőzz meg velem!' : 'Parasztsakk – gyere, mérkőzz meg velem!');
     $('btnLobbyCancel').onclick = toMenu; $('btnToMenu').onclick = toMenu; $('bMenu').onclick = () => { if (G.over || confirm('Elhagyod a csatamezőt?')) toMenu(); };
-    $('btnAgain').onclick = () => { if (G.mode === 'bot') startBot(G.level); else if (G.mode === 'local') startLocal(); else toMenu(); };
+    $('btnAgain').onclick = () => { G.over = true; if (updateIfPending()) return; if (G.mode === 'bot') startBot(G.level); else if (G.mode === 'local') startLocal(); else toMenu(); };
   }
   const TALK_NAME = { many: 'sok', few: 'kevés', off: 'csend' };
   function paintTalk() { $('talkSeg').querySelectorAll('button').forEach(x => x.classList.toggle('on', x.dataset.v === W.talk)); $('bTalk').querySelector('small').textContent = 'Szó: ' + TALK_NAME[W.talk]; $('bTalk').classList.toggle('off', W.talk === 'off'); }
@@ -109,7 +136,7 @@
   const otherTheme = t => { const o = THEME_IDS.filter(x => x !== t); return o[Math.floor(Math.random() * o.length)]; };
 
   function toMenu() {
-    cleanup(); G.mode = null; $('hud').classList.add('hidden'); show('menu'); W.idleOn = true; SFX.mood('menu');
+    cleanup(); G.mode = null; $('hud').classList.add('hidden'); show('menu'); W.idleOn = true; SFX.mood('menu'); updateIfPending();
     if (!W.pieces.length) { G.chess = new Chess(); W.setup(G.chess); }
   }
   function cleanup(keepSub) { G.gen++; if (G.unsub && !keepSub) { try { G.unsub(); } catch (e) { /* */ } G.unsub = null; } G.queue = []; G.over = false; G.sel = -1; G.room = null; }

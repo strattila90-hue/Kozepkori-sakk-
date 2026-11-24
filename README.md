@@ -22,6 +22,11 @@ Fehér · Fekete · Vörös · Arany (mindenki a sajátját választja; azonos v
 - A győztes királyát megkoronázzák; a vesztes seregét **sárkány** elégeti, **hóhér** lefejezi, vagy egymást **nyakon szúrják**.
 - Döntetlennél a **Fekete Halál** visz el mindenkit.
 
+## v1.0.1 – automatikus frissítés
+- Az új kiadás **magától betöltődik**, ha épp nincs csata (menüben, a csata végén). Csata közben soha: ilyenkor felül jelzi, és a várba (menübe) lépéskor vagy új csata indításakor tölti be.
+- Ellenőrzés induláskor, 10 percenként és az alkalmazásba visszatéréskor. Hurokvédelem: ugyanarra a verzióra 10 percen belül csak egyszer próbál.
+- A menüben kikapcsolható („Automatikus frissítés”).
+
 ## v1.0.0 – első éles kiadás
 A v0.9.7–v0.10.0 összes újítása élesítve: olvasható buborékok és szobakód, középkori zene, élethűbb hóhér és disznóvágás, diófa tábla, szúró kezek, lépő lábak, élőbb tömeg, csapkodó szárnyú sárkány.
 
