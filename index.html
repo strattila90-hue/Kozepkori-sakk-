@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
-<meta name="theme-color" content="#2c64a8">
+<meta name="theme-color" content="#1c1310">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png">
 <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
@@ -40,6 +40,7 @@
   </defs>
 </svg>
 
+<div id="splash" aria-hidden="true"><div class="sp-in"><div class="logo"><span class="drop">P</span><span class="word">arasztsakk</span></div><div class="sp-sub">A Véres Udvar</div><div class="sp-bar"><i id="spBar"></i></div><div class="sp-note" id="spNote">A vár kapui nyílnak…</div></div></div>
 <canvas id="c" role="img" aria-label="Sakktábla a középkori udvarban: koppints a bábukra és a zöld mezőkre a lépéshez"></canvas>
 <div id="toast" role="status" aria-live="assertive"></div>
 
@@ -111,6 +112,7 @@
       <div class="seg" id="perfSeg"><button data-v="auto" class="on">Magától</button><button data-v="low">Kíméletes</button><button data-v="high">Pazar</button></div>
       <div class="opts">
         <label><input type="checkbox" id="optVoice" checked> Vezényszó: a hadvezér felolvassa a parancsot</label>
+        <label><input type="checkbox" id="optHaptic" checked> Rezgés lépésnél, ütésnél, sakknál</label>
         <label><input type="checkbox" id="optFast"> Sietős mészárlás (gyors mozgás)</label>
         <label><input type="checkbox" id="optMusic" checked> Lantos zene (középkori dallamok)</label>
         <label><input type="checkbox" id="optAutoUpd" checked> Automatikus frissítés (csata közben soha)</label>

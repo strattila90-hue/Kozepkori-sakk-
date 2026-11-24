@@ -168,6 +168,19 @@ let pass = 0, fail = 0; const ok = (n, c, info) => { c ? pass++ : fail++; consol
     await P.evaluate(() => W.setTod('auto'));
     await c8.close();
   }
+  console.log('Natív érzés (v1.3)');
+  {
+    const c9 = await b.newContext({ viewport: { width: 430, height: 900 } }); const P = await mk(c9); await P.waitForTimeout(1500);
+    ok('az indítóképernyő eltűnik a betöltés után', !(await P.$('#splash')));
+    const sel = await P.evaluate(() => getComputedStyle(document.body).userSelect || getComputedStyle(document.body).webkitUserSelect);
+    ok('nincs véletlen szövegkijelölés', sel === 'none', sel);
+    await P.evaluate(() => { window.__vib = []; navigator.vibrate = p => { window.__vib.push(p); return true; }; });
+    await P.click('#btnLocal'); await P.waitForTimeout(600); await P.evaluate(() => { W.idleOn = false; W.speed = 6; window.__voiceMove('e2 e4'); }); await P.waitForTimeout(200); await idle(P);
+    ok('rezgés a lépésnél', (await P.evaluate(() => window.__vib.length)) > 0);
+    P.on('dialog', d => d.accept()); await P.goBack().catch(() => {}); await P.waitForTimeout(500);
+    ok('vissza-gomb csata közben: rákérdez, majd a várba visz', await P.evaluate(() => !document.getElementById('menu').classList.contains('hidden') && !window.__G.mode));
+    await c9.close();
+  }
   ok('nincs oldal-hiba a teszt során', errs.length === 0, errs.slice(0, 3));
   await b.close(); srv.close(); console.log(`\nFüsttesztek: ${pass} sikeres, ${fail} hibás`); process.exit(fail ? 1 : 0);
 })();

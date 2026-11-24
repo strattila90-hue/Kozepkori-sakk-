@@ -40,6 +40,7 @@
   }
   W.hop = hop;
 
+  function landRing(e) { W.part({ kind: 'ring', x: e.x, y: 0.01, z: e.z, g: 0, life: 0.55, size: 0.32, color: e.theme.id === 'black' ? '#c9a0ff' : '#ffe08a' }); puff(e.x, 0.05, e.z, 4, '#cdb98a', 0.6); W.buzz(12); }
   async function travel(att, to, m) {
     const dist = Math.hypot(to.x - att.x, to.z - att.z), isN = att.type === 'N';
     SFX.hop();
@@ -48,7 +49,7 @@
       const rf = m.castle === 'K' ? m.from + 3 : m.from - 4, rt = m.castle === 'K' ? m.from + 1 : m.from - 1, r = W.pieceAt(rf);
       if (r) { const p = W.sqPos(rt); r.sq = rt; jobs.push(hop(r, p.x, p.z, 0.6, 0.5, 2)); W.say(r, L.pick('castle'), 1.4); }
     }
-    await Promise.all(jobs);
+    await Promise.all(jobs); landRing(att);
   }
 
   /* Egy ütés: előkészület (hátra, lehajol) -> kilendülés a célra -> becsapódás (hit-stop, villanás, vágásív, vér) -> hátratántorodás -> visszaállás. */
@@ -68,7 +69,7 @@
     W.part({ kind: 'slash', x: (x.x + hx) / 2, y: hy + 0.2, z: (x.z + hz) / 2, vx: 0, vy: 0, vz: 0, g: 0, life: 0.26, size: 0.85, rot: sl - 0.5, color: o.blood ? '#ffffff' : '#ffe9a0' });
     W.part({ kind: 'slash', x: (x.x + hx) / 2, y: hy - 0.1, z: (x.z + hz) / 2, vx: 0, vy: 0, vz: 0, g: 0, life: 0.26, size: 0.7, rot: sl + 0.7, color: '#ffffff' });
     if (o.blood) {
-      SFX.stab(); y.hurt = 1; x.bloodBlade = true; W.decal(hx + rnd(-0.3, 0.3), hz + rnd(-0.3, 0.3), 0.15);
+      SFX.stab(); y.hurt = 1; x.bloodBlade = true; W.buzz(o.lethal ? [30, 40, 60] : 25); W.decal(hx + rnd(-0.3, 0.3), hz + rnd(-0.3, 0.3), 0.15);
       for (let i = 0; i < (o.lethal ? 40 : 20); i++) W.part({ kind: 'blood', x: hx - ux * 0.2, y: hy + rnd(-0.35, 0.35), z: hz - uz * 0.2, vx: ux * rnd(1.5, 5) + rnd(-1.2, 1.2), vy: rnd(0.8, 3.8), vz: uz * rnd(1.5, 5) + rnd(-1.2, 1.2), g: 10, size: rnd(0.035, 0.1), color: pick(['#a50f0f', '#c01616', '#8a0a0a']), life: 1.4 });
       W.say(y, o.lethal ? L.pick('dying') : L.pick('hurt'), o.lethal ? 2.6 : 1.5); if (Math.random() < 0.5) SFX.ow(); W.shake = Math.max(W.shake, o.lethal ? 0.8 : 0.35);
     } else { SFX.clang(); sparks(hx, hy, hz); sparks(hx, hy, hz); sparks(hx, hy, hz); y.hurt = 0.6; W.shake = Math.max(W.shake, 0.15); }
@@ -258,7 +259,7 @@
       }
       W.hl.last = [m.from, m.to];
       if (m.check) {
-        const k = W.king(m.color === 'w' ? 'b' : 'w'); SFX.check();
+        const k = W.king(m.color === 'w' ? 'b' : 'w'); SFX.check(); W.buzz([60, 50, 60]);
         if (k) { W.hl.check = k.sq; W.say(k, L.pick('check'), 2.4); k.hurt = 0.6; setTimeout(() => { k.hurt = 0; }, 900); }
         toast(m.status === 'checkmate' ? 'Matt, uram!' : 'Sakk, uram!', 'bad');
       }
