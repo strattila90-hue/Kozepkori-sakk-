@@ -181,6 +181,19 @@ let pass = 0, fail = 0; const ok = (n, c, info) => { c ? pass++ : fail++; consol
     ok('vissza-gomb csata közben: rákérdez, majd a várba visz', await P.evaluate(() => !document.getElementById('menu').classList.contains('hidden') && !window.__G.mode));
     await c9.close();
   }
+  console.log('Időjárás, filmes harc (v1.4)');
+  {
+    const c10 = await b.newContext({ viewport: { width: 430, height: 900 } }); const P = await mk(c10);
+    await P.click('#btnLocal'); await P.waitForTimeout(600);
+    const r = await P.evaluate(() => { W.idleOn = false; W.autoQ = false; W.setQ(2); const out = {}; for (const w of ['rain', 'snow', 'fog', 'clear']) { W.weatherMode = w; W.rollWeather(); W._renderOnce(); out[w] = W.weather; } W.weatherMode = 'vary'; W.rollWeather(); out.vary = ['clear', 'rain', 'snow', 'fog'].includes(W.weather); W.weatherMode = 'clear'; W.rollWeather(); return out; });
+    ok('időjárás: minden mód hiba nélkül rajzolódik, a változó sorsol', r.rain === 'rain' && r.snow === 'snow' && r.fog === 'fog' && r.vary, r);
+    await P.evaluate(() => { W.speed = 6; W.deathStyle = 'blood'; });
+    for (const x of ['e2 e4', 'd7 d5']) { await P.evaluate(x => window.__voiceMove(x), x); await P.waitForTimeout(150); await idle(P); }
+    await P.evaluate(() => window.__voiceMove('e4 d5')); let slow = false; for (let k = 0; k < 120; k++) { if (await P.evaluate(() => W.slowmo > 0)) { slow = true; break; } await P.waitForTimeout(50); }
+    await idle(P);
+    ok('halálos csapásnál lassítás, utána a játék megy tovább', slow && (await P.evaluate(() => __G.chess.moveList.length)) === 3);
+    await c10.close();
+  }
   ok('nincs oldal-hiba a teszt során', errs.length === 0, errs.slice(0, 3));
   await b.close(); srv.close(); console.log(`\nFüsttesztek: ${pass} sikeres, ${fail} hibás`); process.exit(fail ? 1 : 0);
 })();
