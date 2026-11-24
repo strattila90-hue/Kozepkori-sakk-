@@ -206,3 +206,19 @@ img,svg{-webkit-user-drag:none}
 .card h2{font-family:"Pirata One",Georgia,serif;font-weight:400;font-size:22px;letter-spacing:.03em}
 details.card summary{font-family:"Pirata One",Georgia,serif;font-weight:400;font-size:22px;letter-spacing:.03em}
 #weatherSeg button{font-size:14px;padding:8px 2px}
+
+/* ===== v1.4.1: fekvő, alacsony képernyő – a parancssáv jobb oldali oszlopban, a jelzések bal oldalt, semmi nem takarja a táblát ===== */
+@media (orientation:landscape) and (max-height:560px){
+  #hud .bottom{left:auto;right:calc(env(safe-area-inset-right) + 26px);top:calc(env(safe-area-inset-top) + 8px);bottom:auto;width:min(22vw,200px);gap:6px}
+  #hud .bottom .plate{align-self:stretch;font-size:15px;padding:5px 10px}
+  #hud .bar .btns.main{display:grid;grid-template-columns:repeat(2,1fr)}
+  #hud .bar .btns button{max-width:none;height:46px}
+  #hud.moreOpen .bar .btns.more{grid-template-columns:repeat(2,1fr)}
+  #hud .plate.top{font-size:15px;padding:5px 10px;margin-top:8px}
+  #turnBadge{left:calc(env(safe-area-inset-left) + 26px)!important;transform:none!important;top:calc(env(safe-area-inset-top) + 56px)!important;font-size:14px;max-width:24vw;white-space:normal}
+  #hint{left:calc(env(safe-area-inset-left) + 26px)!important;right:auto!important;bottom:calc(env(safe-area-inset-bottom) + 10px)!important;transform:none!important;max-width:24vw;font-size:13px}
+  #hud.moreOpen #hint{display:block}
+  #log{left:calc(env(safe-area-inset-left) + 26px);transform:none;top:calc(env(safe-area-inset-top) + 104px);width:24vw;flex-direction:column;align-items:flex-start}
+  #log ol{flex-wrap:wrap;white-space:normal;max-height:40vh;overflow-y:auto}
+  #cmd{top:auto;bottom:calc(env(safe-area-inset-bottom) + 8px);font-size:15px;max-width:44vw}
+}
