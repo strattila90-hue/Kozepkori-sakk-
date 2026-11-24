@@ -32,7 +32,7 @@
       for (let r = 0; r < n; r++) for (let c = 0; c < n; c++) if (qr.isDark(r, c)) g.fillRect(off + c * px, off + r * px, px, px);
     } catch (e) { console.warn('QR', e); }
   }
-  const APP_V = '1.3.1'; let deferredInstall = null, swReg = null, newWorker = null;
+  const APP_V = '1.4.0'; let deferredInstall = null, swReg = null, newWorker = null;
   const isStandalone = () => window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone;
   function showUpdateBanner(txt) {
     if ($('updBanner')) return; const d = document.createElement('div'); d.id = 'updBanner'; d.innerHTML = '<span></span><button>Betöltöm!</button>'; d.firstChild.textContent = txt; d.lastChild.onclick = applyUpdate; document.body.appendChild(d);
@@ -112,6 +112,7 @@
     $('btnBot').onclick = () => startBot(+$('botLevel').value); $('btnLocal').onclick = startLocal;
     $('perfSeg').querySelectorAll('button').forEach(b => { b.classList.toggle('on', b.dataset.v === W.perfMode); b.onclick = () => { W.setPerf(b.dataset.v); $('perfSeg').querySelectorAll('button').forEach(x => x.classList.toggle('on', x === b)); }; });
     $('optFast').onchange = e => { W.speed = e.target.checked ? 1.7 : 1; };
+    $('weatherSeg').querySelectorAll('button').forEach(b => { b.classList.toggle('on', b.dataset.v === W.weatherMode); b.onclick = () => { W.setWeather(b.dataset.v); $('weatherSeg').querySelectorAll('button').forEach(x => x.classList.toggle('on', x === b)); }; });
     $('todSeg').querySelectorAll('button').forEach(b => { b.classList.toggle('on', b.dataset.v === W.todMode); b.onclick = () => { W.setTod(b.dataset.v); $('todSeg').querySelectorAll('button').forEach(x => x.classList.toggle('on', x === b)); }; });
     $('optHaptic').checked = W.haptics; $('optHaptic').onchange = e => { W.haptics = e.target.checked; store.set('ps_haptic', W.haptics ? '1' : '0'); W.buzz(20); };
     W.deathStyle = store.get('ps_death') || 'mixed';
@@ -141,7 +142,7 @@
   const otherTheme = t => { const o = THEME_IDS.filter(x => x !== t); return o[Math.floor(Math.random() * o.length)]; };
 
   function toMenu() {
-    cleanup(); G.mode = null; $('hud').classList.add('hidden'); show('menu'); W.idleOn = true; SFX.mood('menu'); keepAwake(false); updateIfPending();
+    cleanup(); G.mode = null; $('hud').classList.add('hidden'); show('menu'); W.idleOn = true; SFX.mood('menu'); keepAwake(false); SFX.rain(false); updateIfPending();
     if (!W.pieces.length) { G.chess = new Chess(); W.setup(G.chess); }
   }
   function cleanup(keepSub) { G.gen++; if (G.unsub && !keepSub) { try { G.unsub(); } catch (e) { /* */ } G.unsub = null; } G.queue = []; G.over = false; G.sel = -1; G.room = null; }
@@ -159,7 +160,7 @@
     $('bDraw').classList.toggle('hidden', opts.mode !== 'online'); $('bUndo').classList.toggle('hidden', opts.mode === 'online');
     $('bFlip').classList.toggle('hidden', opts.mode !== 'local');
     hideAll(); $('hud').classList.remove('hidden'); updateHud();
-    SFX.init(); SFX.bell(); SFX.mood('game'); keepAwake(true); pushBack();
+    SFX.init(); SFX.bell(); SFX.mood('game'); keepAwake(true); pushBack(); W.rollWeather();
     if (opts.mode === 'bot' && G.mySide === 'b') setTimeout(botMove, 800);
   }
   function startLocal() {

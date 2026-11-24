@@ -305,7 +305,7 @@
     tree(w * 0.1, by - wh * 0.55, wh * 0.9, '#3f7a38'); tree(w * 0.45, by - wh * 0.6, wh * 0.7, '#4a8a3f'); tree(w * 0.9, by - wh * 0.58, wh * 0.85, '#3f7a38');
     if (Figures.extra('castle')) {
       const im = Figures.extra('castle'), cw = Math.min(cam.W * 1.5, Math.max(cam.W * 1.15, wh * 7)), ch = cw * im.height / im.width, cy = by + 2;
-      ctx.save(); ctx.globalAlpha = 0.97; ctx.drawImage(im, cam.W / 2 - cw / 2, cy - ch, cw, ch); ctx.restore();
+      ctx.save(); ctx.globalAlpha = 0.97; ctx.drawImage(im, cam.W / 2 - cw / 2, cy - ch, cw, ch); ctx.restore(); W._castle = { x: cam.W / 2 - cw / 2, y: cy - ch, w: cw, h: ch };
       // légköri pára a torony alján + fű-dombok eltakarják a vár tövét (rétegezés)
       const hg = ctx.createLinearGradient(0, cy - ch * 0.55, 0, cy); hg.addColorStop(0, 'rgba(160,195,225,0)'); hg.addColorStop(1, 'rgba(170,200,205,.55)'); ctx.fillStyle = hg; ctx.fillRect(0, cy - ch * 0.55, cam.W, ch * 0.55);
       ctx.fillStyle = '#6fa04c'; ctx.strokeStyle = '#2b1b10'; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(0, cy + 12);
@@ -465,6 +465,7 @@
         ctx.fillStyle = 'rgba(255,196,40,.78)'; ctx.fill(); ctx.strokeStyle = '#1c1310'; ctx.lineWidth = 2; ctx.stroke();
       }
     }
+    drawSnowCover();
     const hn = W.hl.hint;
     if (hn) {   // a tanácsos nyila: kék, lüktető
       const f = W.sqPos(hn.from), t = W.sqPos(hn.to), a = W.P(f.x, 0, f.z), b = W.P(t.x, 0, t.z), k = (a.k + b.k) / 2, dx = b.x - a.x, dy = b.y - a.y, Ln = Math.hypot(dx, dy) || 1, ux = dx / Ln, uy = dy / Ln, nx = -uy, ny = ux, pu = 0.7 + 0.3 * Math.sin(W.time * 5);
@@ -604,6 +605,12 @@
     const im = Figures.extra(sc.k); if (!im) return; const p = W.P(sc.x, 0, sc.z); if (p.x < -400 || p.x > cam.W + 400) return;
     const h = sc.h * p.k, w = im.width * h / im.height; if (sc.stat) shadow(sc.x, sc.z, 0.5, 0.35);
     ctx.drawImage(im, p.x - w / 2, p.y - h + 2, w, h);
+    if (sc.k === 'tavern' && W.q >= 1) {   // kémény a nádtetőn, gomolygó füsttel
+      const cx = p.x - w / 2 + w * 0.745, cy = p.y - h + h * 0.13, k = p.k;
+      ctx.fillStyle = '#6e5a48'; ctx.strokeStyle = '#2b1b10'; ctx.lineWidth = 1.5; ctx.fillRect(cx - k * 0.1, cy - k * 0.32, k * 0.2, k * 0.36); ctx.strokeRect(cx - k * 0.1, cy - k * 0.32, k * 0.2, k * 0.36); ctx.fillStyle = '#4e3e30'; ctx.fillRect(cx - k * 0.13, cy - k * 0.36, k * 0.26, k * 0.07);
+      for (let i = 0; i < 7; i++) { const t = (W.time * 0.22 + i / 7) % 1, x = cx + t * k * 0.9 + Math.sin(W.time + i * 2) * k * 0.08, y = cy - k * 0.38 - t * k * 2.4, r = k * (0.1 + t * 0.38);
+        ctx.fillStyle = `rgba(${W.tod === 'night' ? '90,95,110' : '200,196,188'},${(1 - t) * 0.32})`; ctx.beginPath(); ctx.arc(x, y, r, 0, TAU); ctx.fill(); }
+    }
   }
   /* Tömeg: a képcsík emberenként sávokra bontva, mindenki a saját ütemében mocorog, ujjong; a hátsó sorok párásak (légperspektíva). */
   const hazeC = new Map();
@@ -652,6 +659,7 @@
       else if (p.kind === 'gib') { ctx.save(); ctx.translate(q.x, q.y); ctx.rotate(p.rot); ctx.fillStyle = p.color; ctx.strokeStyle = '#2a170b'; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.ellipse(0, 0, s * 1.3, s * 0.7, 0, 0, TAU); ctx.fill(); ctx.stroke(); ctx.restore(); }
       else if (p.kind === 'conf') { ctx.save(); ctx.translate(q.x, q.y); ctx.rotate(p.rot); ctx.fillStyle = p.color; ctx.fillRect(-s, -s * 0.5, s * 2, s); ctx.restore(); }
       else if (p.kind === 'slash') { const rr = p.size * q.k, a0 = a; ctx.save(); ctx.translate(q.x, q.y); ctx.rotate(-0.3); ctx.globalAlpha = a0; ctx.lineCap = 'round'; ctx.strokeStyle = p.color; ctx.lineWidth = Math.max(3, q.k * 0.09) * a0; ctx.beginPath(); ctx.arc(0, 0, rr, -2.1, 0.9); ctx.stroke(); ctx.lineWidth = Math.max(1.5, q.k * 0.04); ctx.strokeStyle = '#1c1310'; ctx.globalAlpha = a0 * 0.6; ctx.beginPath(); ctx.arc(0, 0, rr * 1.08, -2.0, 0.8); ctx.stroke(); ctx.restore(); }
+      else if (p.kind === 'shield') { const R = p.size * q.k * (1 + (1 - a) * 0.4); ctx.save(); ctx.globalAlpha = a; ctx.translate(q.x, q.y); const g = ctx.createRadialGradient(-R * 0.3, -R * 0.3, 0, 0, 0, R); g.addColorStop(0, '#ffffff'); g.addColorStop(0.35, p.color); g.addColorStop(1, '#3a3530'); ctx.fillStyle = g; ctx.beginPath(); ctx.ellipse(0, 0, R * 0.8, R, 0, 0, TAU); ctx.fill(); ctx.lineWidth = Math.max(2, R * 0.15); ctx.strokeStyle = '#c9a03a'; ctx.stroke(); ctx.globalCompositeOperation = 'lighter'; ctx.fillStyle = `rgba(255,250,220,${a * 0.6})`; ctx.beginPath(); ctx.ellipse(0, 0, R * 1.3, R * 1.5, 0, 0, TAU); ctx.fill(); ctx.restore(); }
       else if (p.kind === 'ring') { const R = p.size * q.k * (1 + (1 - a) * 2.2); ctx.save(); ctx.globalAlpha = a * 0.9; ctx.strokeStyle = p.color; ctx.lineWidth = Math.max(1.5, q.k * 0.05 * a); ctx.beginPath(); ctx.ellipse(q.x, q.y, R, R * cam.sinP, 0, 0, TAU); ctx.stroke(); ctx.restore(); }
       else if (p.kind === 'spark') { ctx.fillStyle = p.color; ctx.globalAlpha = a; ctx.fillRect(q.x - s * 0.5, q.y - s * 0.5, s, s); ctx.globalAlpha = 1; }
       else { ctx.fillStyle = p.color; ctx.beginPath(); ctx.arc(q.x, q.y, Math.max(1.2, s), 0, TAU); ctx.fill(); }
@@ -670,9 +678,102 @@
     ctx.save(); ctx.beginPath(); ctx.rect(-w, -hh * 1.3, w * 2, hh * 1.4); for (const r of wr) ctx.rect(X(r[0]), Y(r[1]), (r[2] - r[0]) * w, (r[3] - r[1]) * hh); ctx.clip('evenodd'); ctx.drawImage(im, -w / 2, -hh, w, hh); ctx.restore();
     const ey = EYES[pose]; if (ey) { ctx.save(); ctx.globalCompositeOperation = 'lighter'; const pu = 0.7 + 0.3 * Math.sin(W.time * 6); for (const [ex, eyy] of ey) { const g = ctx.createRadialGradient(X(ex), Y(eyy), 0, X(ex), Y(eyy), hh * 0.04); g.addColorStop(0, `rgba(255,230,90,${0.9 * pu})`); g.addColorStop(0.4, `rgba(255,120,20,${0.5 * pu})`); g.addColorStop(1, 'rgba(255,60,0,0)'); ctx.fillStyle = g; ctx.beginPath(); ctx.arc(X(ex), Y(eyy), hh * 0.04, 0, TAU); ctx.fill(); } ctx.restore(); }
   }
+  /* ---------- Élő udvar: lobogó zászlók a tornyokon (a két sereg színében) ---------- */
+  const BANNERS = [[0.31, 0.495, 1], [0.474, 0.503, 0], [0.644, 0.495, 1], [0.866, 0.386, 0], [0.134, 0.553, 1]];    // a vár képén (vágott kép arányában): torony teteje, melyik sereg
+  function drawCastleLife() {
+    const c = W._castle; if (!c || !Figures.extra('castle')) return; const k = c.h / 4.2;
+    for (const [fx, fy, side] of BANNERS) {
+      const x = c.x + fx * c.w, y = c.y + fy * c.h, pole = k * 0.4, col = side ? W.themes.b.main : W.themes.w.main, wv = W.time * 5 + fx * 9;
+      ctx.strokeStyle = '#2b1b10'; ctx.lineWidth = Math.max(1.2, k * 0.025); ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(x, y - pole); ctx.stroke();
+      const L = k * 0.42, H = k * 0.2; ctx.beginPath(); ctx.moveTo(x, y - pole);
+      for (let i = 1; i <= 8; i++) { const u = i / 8; ctx.lineTo(x + u * L, y - pole + Math.sin(wv - u * 4) * H * 0.25 * u); }
+      for (let i = 8; i >= 0; i--) { const u = i / 8; ctx.lineTo(x + u * L * (i === 8 ? 0.85 : 1), y - pole + H * (1 - u * 0.4) + Math.sin(wv - u * 4) * H * 0.25 * u); }
+      ctx.closePath(); ctx.fillStyle = col; ctx.fill(); ctx.lineWidth = 1; ctx.stroke();
+      ctx.fillStyle = 'rgba(0,0,0,.18)'; ctx.fillRect(x, y - pole + H * 0.45, L * 0.5, H * 0.12);
+    }
+    // lelógó, hímzett lobogók a várfalon (telefonon is látszanak): seregszín, arany szegély, címer-kör, rojt; a szél lengeti az alját
+    for (const [fx, fy, side] of DRAPES) {
+      const x = c.x + fx * c.w, y = c.y + fy * c.h, bw = c.w * 0.035, bh = c.h * 0.24, sw = Math.sin(W.time * 1.6 + fx * 11) * bw * 0.25, col = side ? W.themes.b.main : W.themes.w.main;
+      ctx.beginPath(); ctx.moveTo(x - bw / 2, y); ctx.lineTo(x + bw / 2, y); ctx.quadraticCurveTo(x + bw / 2 + sw * 0.4, y + bh * 0.6, x + bw / 2 + sw, y + bh); ctx.lineTo(x + sw, y + bh * 0.86); ctx.lineTo(x - bw / 2 + sw, y + bh); ctx.quadraticCurveTo(x - bw / 2 + sw * 0.4, y + bh * 0.6, x - bw / 2, y); ctx.closePath();
+      const g = ctx.createLinearGradient(x - bw / 2, 0, x + bw / 2, 0); g.addColorStop(0, S.mixc(col, -0.25)); g.addColorStop(0.45, col); g.addColorStop(1, S.mixc(col, -0.35)); ctx.fillStyle = g; ctx.fill();
+      ctx.lineWidth = Math.max(1, bw * 0.08); ctx.strokeStyle = '#d9a935'; ctx.stroke();
+      ctx.fillStyle = '#d9a935'; ctx.beginPath(); ctx.arc(x + sw * 0.35, y + bh * 0.38, bw * 0.26, 0, TAU); ctx.fill(); ctx.fillStyle = S.mixc(col, -0.3); ctx.beginPath(); ctx.arc(x + sw * 0.35, y + bh * 0.38, bw * 0.15, 0, TAU); ctx.fill();
+      ctx.fillStyle = '#5a3418'; ctx.fillRect(x - bw * 0.65, y - bw * 0.12, bw * 1.3, bw * 0.18);
+    }
+  }
+  const DRAPES = [[0.255, 0.66, 0], [0.405, 0.66, 1], [0.555, 0.58, 0], [0.705, 0.68, 1], [0.79, 0.68, 0]];
+  /* madárraj: nagy ütésnél felrebben a tömeg fölül */
+  const flock = [];
+  W.scareBirds = function () { if (W.q === 0) return; const sx = rnd(0.2, 0.8) * cam.W, sy = cam.H * 0.25; for (let i = 0; i < 9; i++) flock.push({ x: sx + rnd(-30, 30), y: sy + rnd(-10, 10), vx: rnd(-90, 90), vy: rnd(-130, -60), ph: rnd(0, 6), life: 3.2 }); SFX.flap && SFX.flap(); };
+  function drawFlock() {
+    if (!flock.length) return; ctx.save(); ctx.strokeStyle = W.tod === 'night' ? '#0a0a12' : '#1a1208'; ctx.lineWidth = 2; ctx.lineCap = 'round';
+    for (let i = flock.length - 1; i >= 0; i--) { const b = flock[i]; b.life -= 0.016; if (b.life <= 0) { flock.splice(i, 1); continue; }
+      b.x += b.vx * 0.016; b.y += b.vy * 0.016; b.vy -= 8 * 0.016; const f = Math.sin(W.time * 14 + b.ph) * 6;
+      ctx.globalAlpha = Math.min(1, b.life); ctx.beginPath(); ctx.moveTo(b.x - 8, b.y - f); ctx.quadraticCurveTo(b.x - 3, b.y - 3, b.x, b.y); ctx.quadraticCurveTo(b.x + 3, b.y - 3, b.x + 8, b.y - f); ctx.stroke(); }
+    ctx.restore();
+  }
+  /* ---------- Vér a kamerán: a halálos csapásnál cseppek a képernyő szélén, lassan lefolynak ---------- */
+  const scrBlood = [];
+  W.bloodScreen = function (n) {
+    if (W.deathStyle === 'stone' || W.q === 0) return;
+    for (let i = 0; i < (n || 3); i++) {   // fröccsenés a „lencsén”: csak a képernyő széle közelében, cseppekkel, lassan lefolyik
+      const side = pick(['l', 'r', 't']), x = side === 'l' ? rnd(0, 0.12) * cam.W : side === 'r' ? cam.W - rnd(0, 0.12) * cam.W : rnd(0.15, 0.85) * cam.W, y = side === 't' ? rnd(0.02, 0.1) * cam.H : rnd(0.15, 0.7) * cam.H;
+      const r = rnd(14, 34), drops = Array.from({ length: 7 }, () => { const an = rnd(0, TAU), d = r * rnd(1.1, 2.4); return [Math.cos(an) * d, Math.sin(an) * d, rnd(1.5, 5)]; });
+      scrBlood.push({ x, y, r, drops, drip: 0, sp: rnd(10, 26), life: rnd(3, 4.5), seed: Math.random() * 9 });
+    }
+  };
+  function drawScreenBlood() {
+    if (!scrBlood.length) return; ctx.save();
+    for (let i = scrBlood.length - 1; i >= 0; i--) {
+      const b = scrBlood[i]; b.life -= 0.016; if (b.life <= 0) { scrBlood.splice(i, 1); continue; } b.drip = Math.min(b.drip + b.sp * 0.016, b.r * 4);
+      ctx.globalAlpha = Math.min(1, b.life / 1.5) * 0.7;
+      const g = ctx.createRadialGradient(b.x, b.y, b.r * 0.2, b.x, b.y, b.r * 1.15); g.addColorStop(0, 'rgba(120,0,0,.95)'); g.addColorStop(0.6, 'rgba(150,8,8,.8)'); g.addColorStop(1, 'rgba(150,8,8,0)');
+      ctx.fillStyle = g; ctx.beginPath(); for (let k = 0; k <= 16; k++) { const an = k / 16 * TAU, rr = b.r * (0.8 + 0.22 * Math.sin(b.seed + k * 1.7) + 0.12 * Math.sin(b.seed * 2 + k * 4.1)); k ? ctx.lineTo(b.x + Math.cos(an) * rr, b.y + Math.sin(an) * rr) : ctx.moveTo(b.x + Math.cos(an) * rr, b.y + Math.sin(an) * rr); } ctx.closePath(); ctx.fill();
+      ctx.fillStyle = 'rgba(130,4,4,.9)'; for (const [dx, dy, rr] of b.drops) { ctx.beginPath(); ctx.arc(b.x + dx, b.y + dy, rr, 0, TAU); ctx.fill(); }
+      const dg = ctx.createLinearGradient(0, b.y, 0, b.y + b.drip); dg.addColorStop(0, 'rgba(130,4,4,.85)'); dg.addColorStop(1, 'rgba(130,4,4,.5)'); ctx.fillStyle = dg;
+      ctx.beginPath(); ctx.moveTo(b.x - b.r * 0.12, b.y); ctx.lineTo(b.x + b.r * 0.12, b.y); ctx.lineTo(b.x + b.r * 0.07, b.y + b.drip); ctx.arc(b.x, b.y + b.drip, b.r * 0.12, 0, Math.PI); ctx.closePath(); ctx.fill();
+      ctx.fillStyle = 'rgba(255,220,220,.35)'; ctx.beginPath(); ctx.ellipse(b.x - b.r * 0.3, b.y - b.r * 0.35, b.r * 0.22, b.r * 0.12, -0.6, 0, TAU); ctx.fill();
+    }
+    ctx.restore();
+  }
+  /* ---------- Időjárás: derült / eső / hó / köd; „változó”: csatánként sorsolva ---------- */
+  W.weatherMode = Util.store.get('ps_weather') || 'clear'; W.weather = W.weatherMode === 'vary' ? 'clear' : W.weatherMode; W.snowCover = 0;
+  W.setWeather = m => { W.weatherMode = m; Util.store.set('ps_weather', m); W.rollWeather(); };
+  W.rollWeather = () => { W.weather = W.weatherMode === 'vary' ? pick(['clear', 'clear', 'rain', 'snow', 'fog']) : W.weatherMode; W.snowCover = 0; if (window.SFX && SFX.rain) SFX.rain(W.weather === 'rain'); };
+  const drops = Array.from({ length: 140 }, () => ({ x: Math.random(), y: Math.random(), l: rnd(0.6, 1.2), s: rnd(0.8, 1.3) }));
+  const flakes = Array.from({ length: 110 }, () => ({ x: Math.random(), y: Math.random(), r: rnd(1, 3.4), s: rnd(0.3, 1), ph: rnd(0, 6) }));
+  const fogBands = Array.from({ length: 6 }, (_, i) => ({ y: 0.25 + i * 0.12, x: Math.random(), s: rnd(0.008, 0.02), w: rnd(0.5, 0.9) }));
+  function drawWeather() {
+    const w = W.weather; if (!w || w === 'clear') return; const dt = 0.016 * W.speed;
+    if (w === 'rain') {
+      ctx.save(); ctx.globalCompositeOperation = 'multiply'; ctx.fillStyle = '#9aa6b8'; ctx.fillRect(0, 0, cam.W, cam.H); ctx.restore();
+      ctx.save(); ctx.strokeStyle = W.tod === 'night' ? 'rgba(170,190,230,.35)' : 'rgba(220,230,250,.5)'; ctx.lineWidth = 1.2; ctx.beginPath();
+      const n = W.q >= 2 ? drops.length : 70;
+      for (let i = 0; i < n; i++) { const d = drops[i]; d.y += dt * 1.6 * d.s; d.x += dt * 0.25 * d.s; if (d.y > 1) { d.y -= 1.05; d.x = Math.random(); } if (d.x > 1) d.x -= 1; const x = d.x * cam.W, y = d.y * cam.H, L = 18 * d.l; ctx.moveTo(x, y); ctx.lineTo(x - L * 0.16, y - L); }
+      ctx.stroke(); ctx.restore();
+      if (Math.random() < 0.5) W.part({ kind: 'ring', x: rnd(-4, 4), y: 0.01, z: rnd(-4, 4), g: 0, life: 0.4, size: 0.08, color: 'rgba(220,235,255,.8)' });
+    } else if (w === 'snow') {
+      W.snowCover = Math.min(1, W.snowCover + dt / 90);
+      ctx.save(); ctx.globalCompositeOperation = 'multiply'; ctx.fillStyle = '#c8d2e2'; ctx.fillRect(0, 0, cam.W, cam.H); ctx.restore();
+      ctx.save(); ctx.fillStyle = 'rgba(255,255,255,.9)';
+      for (const f of flakes) { f.y += dt * 0.07 * f.s; f.x += Math.sin(W.time * 0.8 + f.ph) * 0.0006; if (f.y > 1) { f.y -= 1.02; f.x = Math.random(); } ctx.globalAlpha = 0.5 + 0.5 * f.s; ctx.beginPath(); ctx.arc(f.x * cam.W, f.y * cam.H, f.r * f.s, 0, TAU); ctx.fill(); }
+      ctx.restore();
+    } else if (w === 'fog') {
+      ctx.save(); for (const b of fogBands) { b.x = (b.x + dt * b.s) % 1.6; const cx = (b.x - 0.3) * cam.W, cy = b.y * cam.H, g = ctx.createRadialGradient(cx, cy, 0, cx, cy, cam.W * b.w);
+        g.addColorStop(0, 'rgba(225,228,232,.38)'); g.addColorStop(1, 'rgba(225,228,232,0)'); ctx.fillStyle = g; ctx.save(); ctx.translate(cx, cy); ctx.scale(1, 0.32); ctx.translate(-cx, -cy); ctx.beginPath(); ctx.arc(cx, cy, cam.W * b.w, 0, TAU); ctx.fill(); ctx.restore(); }
+      ctx.fillStyle = 'rgba(210,214,220,.18)'; ctx.fillRect(0, 0, cam.W, cam.H); ctx.restore();
+    }
+  }
+  /* hó a táblán: fehér pöttyös réteg, a hóeséssel lassan vastagodik */
+  let snowPat = null;
+  function drawSnowCover() {
+    if (W.weather !== 'snow' || W.snowCover < 0.02) return;
+    if (!snowPat) { const c = document.createElement('canvas'); c.width = c.height = 64; const g = c.getContext('2d'); for (let i = 0; i < 70; i++) { g.fillStyle = `rgba(255,255,255,${0.4 + Math.random() * 0.6})`; g.beginPath(); g.arc(Math.random() * 64, Math.random() * 64, 0.6 + Math.random() * 2.2, 0, TAU); g.fill(); } snowPat = ctx.createPattern(c, 'repeat'); }
+    ctx.save(); ctx.globalAlpha = W.snowCover * 0.55; quad(-4.5, -4.5, 4.5, 4.5, 0); ctx.fillStyle = snowPat; ctx.fill(); ctx.restore();
+  }
   /* Tükröződés: a lakkozott táblán a bábuk halvány, függőlegesen tükrözött képe (csak a táblán belül). */
   function drawReflections() {
-    if (!(Figures.ready)) return; ctx.save(); quad(-4, -4, 4, 4, 0); ctx.clip(); ctx.globalAlpha = W.tod === 'night' ? 0.1 : 0.15;
+    if (!(Figures.ready)) return; ctx.save(); quad(-4, -4, 4, 4, 0); ctx.clip(); ctx.globalAlpha = (W.tod === 'night' ? 0.1 : 0.15) * (W.weather === 'rain' ? 1.9 : 1);
     for (const e of W.pieces) {
       if (e.state === 'dead' || (e.alpha !== undefined && e.alpha < 0.5) || !Figures.has(e.theme.id)) continue;
       const X = e.x + e.ox, Z = e.z + e.oz, p = W.P(X, 0, Z); ctx.save(); ctx.translate(p.x, p.y + e.y * p.k * 0.8); ctx.scale(p.k, -p.k * 0.62); e.T = W.time; Figures.draw(ctx, e); ctx.restore();
@@ -796,6 +897,7 @@
     // simított képkocka-idő: az egyenetlen képkockák (GC, háttérfolyamat) nem rántják meg a mozgást
     W._sdt = W._sdt ? (Math.abs(rawDt - W._sdt) < W._sdt * 0.6 ? W._sdt * 0.85 + rawDt * 0.15 : rawDt) : rawDt; rawDt = W._sdt;
     let dt = rawDt * W.speed * (W.skip ? 2.6 : 1);
+    if (W.slowmo > 0) { W.slowmo -= rawDt; dt *= W.skip ? 1 : 0.3; }       // lassítás a halálos csapásnál
     if (W.hitstop > 0) { W.hitstop -= rawDt; dt = 0; }
     W.time += dt;
     { const raw = (ts - (W._lt || ts)) / 1000; W._lt = ts;
@@ -832,6 +934,7 @@
       if (horizonY + hz.k * 0.5 > 0) drawWall(horizonY, hz.k);
       drawGround(Math.max(0, Math.min(horizonY, cam.H - 4)));
     }, W.q >= 2 ? 0.2 : 2.5);
+    drawCastleLife();
     layer('board', ck + '|' + W.themes.w.id + W.themes.b.id, drawBoardBase);
     drawBoardDyn();
     if (W.q >= 2) drawReflections();
@@ -852,11 +955,14 @@
     if (W.crownFx) { const c = W.crownFx, p = W.P(c.x, c.y, c.z); S.crownGfx(ctx, p.x, p.y, p.k * 0.55); }
     drawParts();
     drawTimeOfDay();
+    drawWeather();
     drawLightFx();
     drawNightLife();
+    drawFlock();
     if (W.fog > 0) { ctx.fillStyle = `rgba(80,140,60,${W.fog * 0.28})`; ctx.fillRect(-20, -20, cam.W + 40, cam.H + 40); }
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     layer('ovl', cam.W + 'x' + cam.H + 'x' + dpr, drawOverlay);
+    drawScreenBlood();
     flushBubbles();
   }
   function drawOverlay() {

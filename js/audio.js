@@ -2,7 +2,7 @@
 (function (root) {
   'use strict';
   let ctx = null, master = null, noiseBuf = null, muted = false, musicBus = null;
-  const MUSIC_VOL = 0.42; let musicOn = true, mood = null;
+  const MUSIC_VOL = 0.42; let musicOn = true, mood = null, rainNode = null, rainWant = false;
   try { musicOn = localStorage.getItem('ps_music') !== '0'; } catch (e) { /* privát mód */ }
 
   function init() {
@@ -18,6 +18,7 @@
     for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
     musicBus = ctx.createGain(); musicBus.gain.value = musicOn ? MUSIC_VOL : 0; musicBus.connect(comp);
     if (mood) startMood(mood);
+    if (rainWant) setTimeout(() => S.rain(true), 0);
     document.addEventListener('visibilitychange', () => { if (!ctx) return; if (document.hidden) ctx.suspend(); else ctx.resume(); });
   }
   const ok = () => ctx && !muted;
@@ -249,6 +250,10 @@
     shatter() { // kő szétrobban
       if (!ok()) return; const t = now(); noise(t, 0.5, 0.6, 'lowpass', 1800, 1); osc('sine', 90, 35, t, 0.4, 0.6);
       for (let i = 0; i < 14; i++) { const d = 0.05 + Math.random() * 0.7; noise(t + d, 0.03, 0.12 + Math.random() * 0.15, 'bandpass', 1500 + Math.random() * 3000, 3); }
+    },
+    rain(on) { // esőzaj: hurkolt, szűrt zaj
+      if (!ctx) { rainWant = on; return; } if (on && !rainNode && !muted) { const src = ctx.createBufferSource(); src.buffer = noiseBuf; src.loop = true; const f = ctx.createBiquadFilter(); f.type = 'bandpass'; f.frequency.value = 2200; f.Q.value = 0.5; const g = ctx.createGain(); g.gain.value = 0.0001; g.gain.setTargetAtTime(0.05, ctx.currentTime, 1); src.connect(f); f.connect(g); g.connect(master); src.start(); rainNode = { src, g }; }
+      else if (!on && rainNode) { const r = rainNode; rainNode = null; r.g.gain.setTargetAtTime(0.0001, ctx.currentTime, 0.5); r.src.stop(ctx.currentTime + 2); }
     },
     flap() { // szárnycsapás
       if (!ok()) return; const t = now(); const f = noise(t, 0.35, 0.35, 'lowpass', 260, 1.5); f.frequency.exponentialRampToValueAtTime(700, t + 0.12); f.frequency.exponentialRampToValueAtTime(180, t + 0.33); osc('sine', 70, 40, t, 0.25, 0.25);

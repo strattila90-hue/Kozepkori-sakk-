@@ -22,6 +22,12 @@ Fehér · Fekete · Vörös · Arany (mindenki a sajátját választja; azonos v
 - A győztes királyát megkoronázzák; a vesztes seregét **sárkány** elégeti, **hóhér** lefejezi, vagy egymást **nyakon szúrják**.
 - Döntetlennél a **Fekete Halál** visz el mindenkit.
 
+## v1.4.0 – Viharos Udvar
+- **Élesebb kép:** a festett képek az eredeti festményekből kb. másfél-kétszeres felbontásban újra kivágva (vár, kocsma, disznóól, tömeg, sárkány, állatok; bábuk 340 helyett 520 pixel magasak). `npm run sprites` újragenerálja.
+- **Filmes harc:** a halálos csapásnál lassítás és közelítés, vér fröccsen a „kamerára” és lassan lefolyik; hárításnál pajzs villan és szikra záporoz; a madarak felrebbennek; a tömeg paradicsommal, tojással, káposztával, csizmával dobálja az ütés helyét.
+- **Időjárás:** derült, eső (cseppek, tócsagyűrűk a táblán, nedves, erősebb tükröződés, esőzaj), hó (hópelyhek, a táblán lassan vastagodó hó), köd (vonuló ködpadok), vagy *Változó* (csatánként sorsolva).
+- **Élő udvar:** lelógó, hímzett lobogók a várfalon és zászlók a tornyokon a két sereg színében, füstölgő kémény a kocsmán.
+
 ## v1.3.1
 - **Olvasható név:** a díszes P iniciálé marad, a „Parasztsakk” szó többi része (és a címek: eredmény, krónika, menükártyák) a nehezen olvasható gót betű helyett jól olvasható gótikus Pirata One betűvel.
 

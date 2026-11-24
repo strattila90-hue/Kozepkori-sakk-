@@ -65,6 +65,7 @@
     // 3) becsapódás
     const hx = y.x, hz = y.z, hy = S.HEIGHT[y.type] * 0.55;
     W.hitstop = o.lethal ? 0.14 : 0.07;
+    if (o.lethal) { W.slowmo = 0.9; W.focusOn(hx, hz, 1.75); W.scareBirds(); }    // filmes lassítás és közelítés a halálos csapásnál
     const sl = Math.atan2(uz, ux);
     W.part({ kind: 'slash', x: (x.x + hx) / 2, y: hy + 0.2, z: (x.z + hz) / 2, vx: 0, vy: 0, vz: 0, g: 0, life: 0.26, size: 0.85, rot: sl - 0.5, color: o.blood ? '#ffffff' : '#ffe9a0' });
     W.part({ kind: 'slash', x: (x.x + hx) / 2, y: hy - 0.1, z: (x.z + hz) / 2, vx: 0, vy: 0, vz: 0, g: 0, life: 0.26, size: 0.7, rot: sl + 0.7, color: '#ffffff' });
@@ -72,7 +73,11 @@
       SFX.stab(); y.hurt = 1; x.bloodBlade = true; W.buzz(o.lethal ? [30, 40, 60] : 25); W.decal(hx + rnd(-0.3, 0.3), hz + rnd(-0.3, 0.3), 0.15);
       for (let i = 0; i < (o.lethal ? 40 : 20); i++) W.part({ kind: 'blood', x: hx - ux * 0.2, y: hy + rnd(-0.35, 0.35), z: hz - uz * 0.2, vx: ux * rnd(1.5, 5) + rnd(-1.2, 1.2), vy: rnd(0.8, 3.8), vz: uz * rnd(1.5, 5) + rnd(-1.2, 1.2), g: 10, size: rnd(0.035, 0.1), color: pick(['#a50f0f', '#c01616', '#8a0a0a']), life: 1.4 });
       W.say(y, o.lethal ? L.pick('dying') : L.pick('hurt'), o.lethal ? 2.6 : 1.5); if (Math.random() < 0.5) SFX.ow(); W.shake = Math.max(W.shake, o.lethal ? 0.8 : 0.35);
-    } else { SFX.clang(); sparks(hx, hy, hz); sparks(hx, hy, hz); sparks(hx, hy, hz); y.hurt = 0.6; W.shake = Math.max(W.shake, 0.15); }
+      if (o.lethal) W.bloodScreen(3);
+    } else {   // hárítás: pajzs villan, fém a fémen, szikraeső
+      SFX.clang(); for (let i = 0; i < 4; i++) sparks(hx - ux * 0.25, hy, hz - uz * 0.25); y.hurt = 0.6; W.shake = Math.max(W.shake, 0.18);
+      W.part({ kind: 'shield', x: hx - ux * 0.3, y: hy, z: hz - uz * 0.3, vx: 0, vy: 0, vz: 0, g: 0, life: 0.45, size: 0.28, color: y.theme.main });
+    }
     // 4) az áldozat hátratántorodik és megdől, a támadó kihúzza és visszahúzódik
     await Promise.all([
       tw(x, { atk: 1, y: 0, sy: 1, sx: 1 }, 0.3, ease.eio, (ob, p) => { x.ox = ux * 0.46 * (1 - p); x.oz = uz * 0.46 * (1 - p); }),
@@ -227,6 +232,17 @@
       }
     }
     W.setCheer(2.5); SFX.cheer(); W.crowdSay(L.pick('crowd'));
+    throwAt(to.x, to.z, v.color);
+  }
+  /* a tömeg megdobálja az ütés helyét (paradicsom, káposzta, csizma, tojás) – a győztes felé, aki „rosszul” csinálta, vagy a hulla helyére */
+  function throwAt(tx, tz) {
+    if (W.q === 0) return;
+    const items = [['#d8321e', 0.07, 'splat'], ['#6aa84a', 0.08, 'leaf'], ['#5a3a1a', 0.09, 'boot'], ['#f4f0e0', 0.05, 'egg']];
+    for (let i = 0; i < 3; i++) setTimeout(() => {
+      const [col, sz, kind] = pick(items), sx = rnd(-5, 5), sz0 = (Math.random() < 0.5 ? -1 : 1) * 6.2, T = rnd(0.9, 1.2), g = 9, ex = tx + rnd(-0.6, 0.6), ez = tz + rnd(-0.6, 0.6);
+      W.part({ kind: 'gib', x: sx, y: 1.2, z: sz0, vx: (ex - sx) / T, vz: (ez - sz0) / T, vy: (0 - 1.2 + 0.5 * g * T * T) / T, vr: rnd(-10, 10), g, size: sz, color: col, life: T + 2.5,
+        onLand: p => { if (kind === 'splat' || kind === 'egg') { W.decal(p.x, p.z, rnd(0.12, 0.2), kind === 'egg' ? 'rgba(250,220,90,.6)' : 'rgba(190,30,20,.55)'); SFX.squish(); return false; } SFX.thud(); return true; } });
+    }, 250 + i * 330);
   }
   async function scavengePile(pile) {
     // egy kutya vagy malac eszi meg a maradékot

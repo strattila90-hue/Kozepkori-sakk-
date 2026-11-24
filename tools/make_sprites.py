@@ -7,7 +7,7 @@ from PIL import Image, ImageFilter
 
 SRC = os.path.join(os.path.dirname(__file__), '..', 'assets', 'src')
 OUT = os.path.join(os.path.dirname(__file__), '..', 'assets', 'figs')
-H = 340
+H = 520   # v1.4: nagyobb felbontás (élesebb telefonon); korábban 340
 
 # Talp-vonal: a forrás-kép magasságának hányada, ami alatt a talapzat van (levágjuk, a bábuk a saját lábukon járnak).
 FOOT = {'K_front': .83, 'Q_front': .845, 'P_front': .775, 'B_front': .80, 'N_front': None, 'R_front': .79,
@@ -109,10 +109,10 @@ def tint(img, army, ptype):
 def main():
     os.makedirs(OUT, exist_ok=True)
     mp = os.path.join(OUT, 'meta.json'); meta = json.load(open(mp)) if os.path.exists(mp) else {}
-    EX = {'x_castle': (None, 420), 'x_tavern': (None, 420), 'x_pigfarm': (None, 360), 'x_crowd1': (0.755, 360), 'x_crowd2': (0.69, 360), 'x_crowd4': (0.765, 360)}
+    EX = {'x_castle': (None, 760), 'x_tavern': (None, 680), 'x_pigfarm': (None, 600), 'x_crowd1': (0.755, 560), 'x_crowd2': (0.69, 520), 'x_crowd4': (0.765, 560)}   # v1.4: ~kétszeres felbontás
 
     for f in ([] if 'figs' in sys.argv else sorted(glob.glob(os.path.join(SRC, 'x_*.jpg')))):
-        key = os.path.basename(f)[:-4]; cy, hh = EX.get(key, (None, 420 if 'dragon' in key else 320))
+        key = os.path.basename(f)[:-4]; cy, hh = EX.get(key, (None, 800 if 'dragon' in key else 480))
         if len(sys.argv) > 1 and sys.argv[1] not in ('figs',) and sys.argv[1] not in key: continue
         im = cut(f, hh, cy)
         if 'crowd' in key:  # a lábak közti fehér kitöltés: az alsó 45%-ban minden közel-fehér átlátszó, a perem lágy

@@ -205,3 +205,4 @@ img,svg{-webkit-user-drag:none}
 #promoBtns button{font:400 24px/1.1 "Pirata One",Georgia,serif!important}
 .card h2{font-family:"Pirata One",Georgia,serif;font-weight:400;font-size:22px;letter-spacing:.03em}
 details.card summary{font-family:"Pirata One",Georgia,serif;font-weight:400;font-size:22px;letter-spacing:.03em}
+#weatherSeg button{font-size:14px;padding:8px 2px}
