@@ -14,6 +14,47 @@
   const show = id => { for (const s of ['menu', 'lobby', 'promo', 'result']) $(s).classList.toggle('hidden', s !== id); };
   const hideAll = () => show(null);
 
+  /* ---------- QR, verzió, telepítés ---------- */
+  const roomUrl = code => location.origin + location.pathname.replace(/index\.html$/, '') + '?room=' + code;
+  function drawQR(code) {
+    try {
+      const qr = qrcode(0, 'M'); qr.addData(roomUrl(code)); qr.make(); const n = qr.getModuleCount(), cv = $('qrCanvas'), q = 4, px = Math.floor(cv.width / (n + 2 * q)), off = Math.floor((cv.width - px * n) / 2), g = cv.getContext('2d');
+      g.fillStyle = '#fff'; g.fillRect(0, 0, cv.width, cv.height); g.fillStyle = '#1c1310';
+      for (let r = 0; r < n; r++) for (let c = 0; c < n; c++) if (qr.isDark(r, c)) g.fillRect(off + c * px, off + r * px, px, px);
+    } catch (e) { console.warn('QR', e); }
+  }
+  const APP_V = '0.9.0'; let deferredInstall = null, swReg = null, newWorker = null;
+  const isStandalone = () => window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone;
+  function showUpdateBanner(txt) {
+    if ($('updBanner')) return; const d = document.createElement('div'); d.id = 'updBanner'; d.innerHTML = '<span></span><button>Betöltöm!</button>'; d.firstChild.textContent = txt; d.lastChild.onclick = applyUpdate; document.body.appendChild(d);
+  }
+  async function applyUpdate() {
+    try { if (swReg && swReg.waiting) swReg.waiting.postMessage('skip'); const ks = await caches.keys(); await Promise.all(ks.map(k => caches.delete(k))); if (swReg) await swReg.unregister(); } catch (e) { /* nincs SW */ }
+    location.reload();
+  }
+  async function checkUpdate(manual) {
+    const btn = $('btnUpdate'), line = $('verLine'); if (manual) { btn.disabled = true; btn.textContent = 'A hírnök lován vágtat…'; }
+    try {
+      const r = await fetch('version.json?_=' + Date.now(), { cache: 'no-store' }); const j = await r.json();
+      if (swReg) { try { await swReg.update(); } catch (e) { /* hálózat */ } }
+      if (j.version && j.version !== APP_V) { line.textContent = 'Új kiadás érkezett: v' + j.version + ' ' + (j.name || '') + ' (nálad: v' + APP_V + ')'; showUpdateBanner('Új kiadás érkezett, jó uram: v' + j.version + '!'); if (manual) { btn.textContent = 'Töltsd be az újat!'; btn.disabled = false; btn.onclick = applyUpdate; } }
+      else { line.textContent = 'Naprakész vagy: v' + APP_V + ' „' + (j.name || '') + '"'; if (manual) { btn.textContent = 'A hírnök azt üzeni: nincs újság, uram.'; setTimeout(() => { btn.textContent = 'Hírnököt küldök: van-e új kiadás?'; btn.disabled = false; }, 2600); } }
+    } catch (e) {
+      line.textContent = 'Verzió: v' + APP_V + ' (a hírnök nem ért haza, nincs hálózat)'; if (manual) { btn.textContent = 'A hírnököt elfogták a rablók. Próbáld újra!'; setTimeout(() => { btn.textContent = 'Hírnököt küldök: van-e új kiadás?'; btn.disabled = false; }, 2800); }
+    }
+  }
+  function initPwa() {
+    $('verLine').textContent = 'Verzió: v' + APP_V; $('btnUpdate').onclick = () => checkUpdate(true);
+    if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {
+      navigator.serviceWorker.register('sw.js').then(reg => { swReg = reg; reg.addEventListener('updatefound', () => { newWorker = reg.installing; if (newWorker) newWorker.addEventListener('statechange', () => { if (newWorker.state === 'installed' && navigator.serviceWorker.controller) showUpdateBanner('Új kiadás készen áll, jó uram!'); }); }); }).catch(() => {});
+    }
+    window.addEventListener('beforeinstallprompt', e => { e.preventDefault(); deferredInstall = e; if (!isStandalone()) $('btnInstall').classList.remove('hidden'); });
+    $('btnInstall').onclick = async () => { if (!deferredInstall) return; deferredInstall.prompt(); try { await deferredInstall.userChoice; } catch (e) { /* mégse */ } deferredInstall = null; $('btnInstall').classList.add('hidden'); };
+    window.addEventListener('appinstalled', () => { $('btnInstall').classList.add('hidden'); UI.toast('A vár a tiéd, uram!'); });
+    if (/iphone|ipad|ipod/i.test(navigator.userAgent) && !isStandalone()) $('iosNote').classList.remove('hidden');
+    checkUpdate(false);
+  }
+
   /* ---------- Menü ---------- */
   function initMenu() {
     $('name').value = store.get('ps_name') || '';
@@ -25,6 +66,7 @@
       box.appendChild(b);
     }
     paintSw();
+    $('botSideSeg').querySelectorAll('button').forEach(b => { b.onclick = () => { botSide = b.dataset.v; $('botSideSeg').querySelectorAll('button').forEach(x => x.classList.toggle('on', x === b)); }; });
     $('sideSeg').querySelectorAll('button').forEach(b => { b.onclick = () => { hostSide = b.dataset.v; $('sideSeg').querySelectorAll('button').forEach(x => x.classList.toggle('on', x === b)); }; });
     const q = new URLSearchParams(location.search).get('room'); if (q) $('code').value = q.toUpperCase().slice(0, 5);
     if (!Net.available()) { const n = $('onlineNote'); n.classList.remove('hidden'); n.textContent = 'A hírnökök még nem kaptak útlevelet (hiányzik az apiKey a firebase-config.js-ből), az online viadal addig nem él. A bolond és a közös asztal működik.'; }
@@ -35,7 +77,7 @@
     $('optFast').onchange = e => { W.speed = e.target.checked ? 1.7 : 1; };
     $('btnCopy').onclick = async () => { try { await navigator.clipboard.writeText(G.code); UI.toast('Jel lemásolva!'); } catch (e) { UI.toast(G.code); } };
     $('btnShare').onclick = async () => {
-      const url = location.origin + location.pathname + '?room=' + G.code;
+      const url = roomUrl(G.code);
       try { if (navigator.share) await navigator.share({ title: 'Parasztsakk', text: 'Gyere sakkozni, paraszt! Kód: ' + G.code, url }); else { await navigator.clipboard.writeText(url); UI.toast('Hírnök-levél másolva!'); } } catch (e) { /* mégse */ }
     };
     $('btnLobbyCancel').onclick = toMenu; $('btnToMenu').onclick = toMenu; $('bMenu').onclick = () => { if (G.over || confirm('Elhagyod a csatamezőt?')) toMenu(); };
@@ -72,9 +114,12 @@
     SFX.init(); const t = myTheme; begin({ mode: 'local', mySide: null, names: { w: myName(), b: 'Ellenfél' }, themeIds: { w: t, b: otherTheme(t) } });
     $('meName').textContent = G.names.w; $('oppName').textContent = G.names.b;
   }
+  let botSide = 'w';
   function startBot(level) {
     SFX.init(); G.level = level; const t = myTheme, lv = ['', 'Részeg jobbágy', 'Falusi bíró', 'Hadúr'][level];
-    begin({ mode: 'bot', mySide: 'w', names: { w: myName(), b: lv }, themeIds: { w: t, b: otherTheme(t) } });
+    const me = botSide === 'r' ? (Math.random() < 0.5 ? 'w' : 'b') : botSide, other = me === 'w' ? 'b' : 'w';
+    const names = {}, themeIds = {}; names[me] = myName(); names[other] = lv; themeIds[me] = t; themeIds[other] = otherTheme(t);
+    begin({ mode: 'bot', mySide: me, names, themeIds });
   }
 
   /* ---------- Online ---------- */
@@ -85,7 +130,7 @@
       UI.toast('Vár nyitása…');
       const code = await Net.createRoom({ name: myName(), theme: myTheme, side });
       G.code = code; G.role = 'host'; store.set('ps_session', JSON.stringify({ code }));
-      $('lobbyCode').textContent = code; show('lobby'); watchRoom(code);
+      $('lobbyCode').textContent = code; drawQR(code); show('lobby'); watchRoom(code);
     } catch (e) { UI.toast(e.message || 'Hiba', 'bad'); console.error(e); }
   }
   async function joinOnline(code) {
@@ -94,7 +139,7 @@
     try {
       const r = await Net.joinRoom(code, { name: myName(), theme: myTheme });
       G.code = code; G.role = r.role; store.set('ps_session', JSON.stringify({ code }));
-      if (r.role === 'host' && !r.data.guestId) { $('lobbyCode').textContent = code; show('lobby'); }
+      if (r.role === 'host' && !r.data.guestId) { $('lobbyCode').textContent = code; drawQR(code); show('lobby'); }
       watchRoom(code);
     } catch (e) { UI.toast(e.message || 'Hiba', 'bad'); console.error(e); }
   }
@@ -290,7 +335,7 @@
 
   /* ---------- Indulás ---------- */
   window.addEventListener('DOMContentLoaded', () => {
-    W.start($('c')); Figures.loadExtras(); initMenu(); initInput();
+    W.start($('c')); Figures.loadExtras(); initMenu(); initInput(); initPwa();
     G.chess = new Chess(); W.setup(G.chess); W.idleOn = true;
     window.__G = G; // hibakereséshez
     document.addEventListener('visibilitychange', () => { if (!document.hidden) SFX.init(); });

@@ -45,3 +45,9 @@ Helyben: `python3 -m http.server` majd `http://localhost:8000`.
 | `js/audio.js` | procedurális hangok (puki, orrfújás, szúrás, sárkány…) |
 | `js/net.js` | Firestore szobák |
 | `js/main.js` | menü, játékmódok, bemenet |
+
+## Telepítés telefonra, frissítés (v0.9.0)
+- A játék **PWA**: Androidon a menü alján megjelenik a „Vidd haza a várat" gomb, iPhone-on Megosztás → „Főképernyőhöz adás". Teljes képernyőn indul, a bolond elleni játék hálózat nélkül is megy.
+- **Frissítés:** a menü alján a „Hírnököt küldök" gomb megnézi, van-e újabb kiadás; ha van, felajánlja a betöltést. Induláskor is magától ellenőriz.
+- **Új kiadás kiadása:** írd át a verziót három helyen azonos értékre: `version.json`, `sw.js` (`VERSION`), `js/main.js` (`APP_V`). A régi gyorsítótárat a következő indulás eldobja.
+- **QR-kód:** a szoba megnyitásakor a váróteremben a meghívó link QR-kódja is megjelenik (`js/qrcode.js`, MIT).

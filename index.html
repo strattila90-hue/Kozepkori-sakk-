@@ -3,7 +3,12 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
-<meta name="theme-color" content="#2f4d8c">
+<meta name="theme-color" content="#2c64a8">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"><meta name="apple-mobile-web-app-title" content="Parasztsakk">
 <title>Parasztsakk – A Véres Udvar</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=IM+Fell+English:ital@0;1&family=UnifrakturCook:wght@700&display=swap" rel="stylesheet">
@@ -64,9 +69,16 @@
     <button id="btnResume" class="big alt hidden"></button>
     <div id="onlineNote" class="note hidden"></div>
     <div class="rule"></div>
+    <div class="row-label">Bolond ellen: kinek a seregével?</div>
+    <div class="seg" id="botSideSeg"><button data-v="w" class="on">Világos</button><button data-v="r">Sorsolás</button><button data-v="b">Sötét</button></div>
     <div class="join"><select id="botLevel"><option value="1">Részeg jobbágy</option><option value="2" selected>Falusi bíró</option><option value="3">Hadúr</option></select><button class="big" id="btnBot"><svg class="ic"><use href="#i-jester"/></svg>Viadal a bolonddal</button></div>
     <button class="big" id="btnLocal"><svg class="ic"><use href="#i-kings"/></svg>Két úr egy asztalnál</button>
     <div class="opts"><label><input type="checkbox" id="optFast"> Sietős mészárlás (gyors mozgás)</label></div>
+    <div class="rule"></div>
+    <button class="big alt hidden" id="btnInstall">Vidd haza a várat (telepítés)</button>
+    <div id="iosNote" class="note hidden">Telefonon: koppints a <b>Megosztás</b> gombra, majd <b>„Főképernyőhöz adás"</b>. Így egy kattintással indul, és hálózat nélkül is megy a bolond elleni viadal.</div>
+    <button class="big alt" id="btnUpdate">Hírnököt küldök: van-e új kiadás?</button>
+    <div id="verLine" class="note"></div>
   </div>
 </div>
 
@@ -75,6 +87,8 @@
     <div class="sub">A vár pecsétje</div>
     <div id="lobbyCode">-----</div>
     <div class="note">Küldd el ezt a jelet ellenfeled udvarába, és kezdődhet a vérontás.</div>
+    <canvas id="qrCanvas" width="220" height="220"></canvas>
+    <div class="note">Vagy olvassa be a barátod a pecsétet a telefonjával.</div>
     <div class="join"><button class="big" id="btnCopy">Jel másolása</button><button class="big" id="btnShare">Hírnök küldése</button></div>
     <div class="wait">Az ellenfél útban van<span>.</span><span>.</span><span>.</span></div>
     <button class="big alt" id="btnLobbyCancel">Mégsem</button>
@@ -98,6 +112,7 @@
 <script src="js/world.js"></script>
 <script src="js/lines.js"></script>
 <script src="js/fx.js"></script>
+<script src="js/qrcode.js"></script>
 <script src="js/net.js"></script>
 <script src="js/main.js"></script>
 </body>

@@ -74,3 +74,8 @@ button.big svg.ic{width:24px;height:24px}
 #hud .bottom{gap:6px}
 @media(min-width:620px){.btns button{width:60px;height:60px}.btns button small{font-size:11px}}
 #hint{bottom:auto!important;top:calc(env(safe-area-inset-top) + 100px)}
+
+#qrCanvas{position:static;inset:auto;display:block;margin:8px auto;width:min(220px,60vw);height:auto;background:#fff;border:6px solid #fff;outline:3px solid #1c1310;image-rendering:pixelated}
+#verLine{text-align:center;font-weight:700}
+#updBanner{position:fixed;left:50%;top:calc(env(safe-area-inset-top) + 8px);transform:translateX(-50%);z-index:40;background:#1c1310;color:#fff6d8;border:2px solid #d4a437;padding:8px 12px;font:700 15px/1.25 "IM Fell English",serif;display:flex;gap:10px;align-items:center;max-width:94vw}
+#updBanner button{font:700 15px "IM Fell English",serif;padding:5px 10px;border:2px solid #1c1310;background:#e3c06e;cursor:pointer}
