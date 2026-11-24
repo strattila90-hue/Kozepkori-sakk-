@@ -32,7 +32,7 @@
       for (let r = 0; r < n; r++) for (let c = 0; c < n; c++) if (qr.isDark(r, c)) g.fillRect(off + c * px, off + r * px, px, px);
     } catch (e) { console.warn('QR', e); }
   }
-  const APP_V = '1.4.0'; let deferredInstall = null, swReg = null, newWorker = null;
+  const APP_V = '1.4.1'; let deferredInstall = null, swReg = null, newWorker = null;
   const isStandalone = () => window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone;
   function showUpdateBanner(txt) {
     if ($('updBanner')) return; const d = document.createElement('div'); d.id = 'updBanner'; d.innerHTML = '<span></span><button>Betöltöm!</button>'; d.firstChild.textContent = txt; d.lastChild.onclick = applyUpdate; document.body.appendChild(d);
@@ -159,7 +159,7 @@
     $('meSw').style.background = S.THEMES[opts.themeIds[bottom]].hex; $('oppSw').style.background = S.THEMES[opts.themeIds[top]].hex;
     $('bDraw').classList.toggle('hidden', opts.mode !== 'online'); $('bUndo').classList.toggle('hidden', opts.mode === 'online');
     $('bFlip').classList.toggle('hidden', opts.mode !== 'local');
-    hideAll(); $('hud').classList.remove('hidden'); updateHud();
+    hideAll(); $('hud').classList.remove('hidden', 'moreOpen'); $('bMore').setAttribute('aria-expanded', false); updateHud();   // a „Több” fiók zárva indul (az előző csatából ne maradjon nyitva)
     SFX.init(); SFX.bell(); SFX.mood('game'); keepAwake(true); pushBack(); W.rollWeather();
     if (opts.mode === 'bot' && G.mySide === 'b') setTimeout(botMove, 800);
   }

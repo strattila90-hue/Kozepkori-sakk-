@@ -22,6 +22,11 @@ Fehér · Fekete · Vörös · Arany (mindenki a sajátját választja; azonos v
 - A győztes királyát megkoronázzák; a vesztes seregét **sárkány** elégeti, **hóhér** lefejezi, vagy egymást **nyakon szúrják**.
 - Döntetlennél a **Fekete Halál** visz el mindenkit.
 
+## v1.4.1 – hibajavítás
+Automata feltáró teszt: 3 teljes bot elleni játszma (éj/alkony/nappal, változó időjárás/eső/hó, minden halálnem), menübe lépés minden végjáték közben, átváltozás, fekvő képernyő, gyors koppintások.
+- **Javítva:** fekvő, alacsony képernyőn a parancssáv, a súgó és a körjelző takarta a táblát → a parancssáv jobb oldali oszlopba, a jelzések bal oldalra kerültek.
+- **Javítva:** az előző csatában nyitva hagyott „Több” fiók az új csatában is nyitva maradt → új csata zárt fiókkal indul.
+
 ## v1.4.0 – Viharos Udvar
 - **Élesebb kép:** a festett képek az eredeti festményekből kb. másfél-kétszeres felbontásban újra kivágva (vár, kocsma, disznóól, tömeg, sárkány, állatok; bábuk 340 helyett 520 pixel magasak). `npm run sprites` újragenerálja.
 - **Filmes harc:** a halálos csapásnál lassítás és közelítés, vér fröccsen a „kamerára” és lassan lefolyik; hárításnál pajzs villan és szikra záporoz; a madarak felrebbennek; a tömeg paradicsommal, tojással, káposztával, csizmával dobálja az ütés helyét.

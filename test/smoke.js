@@ -194,6 +194,22 @@ let pass = 0, fail = 0; const ok = (n, c, info) => { c ? pass++ : fail++; consol
     ok('halálos csapásnál lassítás, utána a játék megy tovább', slow && (await P.evaluate(() => __G.chess.moveList.length)) === 3);
     await c10.close();
   }
+  console.log('Hibajavítások (v1.4.1)');
+  {
+    const c11 = await b.newContext({ viewport: { width: 430, height: 900 } }); const P = await mk(c11); P.on('dialog', d => d.accept());
+    await P.click('#btnLocal'); await P.waitForTimeout(400); await P.click('#bMore'); await P.click('#bMenu'); await P.waitForTimeout(300); await P.click('#btnLocal'); await P.waitForTimeout(400);
+    ok('új csatában a „Több” fiók zárva indul', await P.evaluate(() => !document.getElementById('hud').classList.contains('moreOpen') && document.getElementById('bMore').getAttribute('aria-expanded') === 'false'));
+    await c11.close();
+    const c12 = await b.newContext({ viewport: { width: 900, height: 430 } }); const Q = await mk(c12); await Q.click('#btnLocal'); await Q.waitForTimeout(800);
+    const L = await Q.evaluate(() => {
+      const q = (x, z) => W.P(x, 0, z), corners = [q(-4.5, -4.5), q(4.5, -4.5), q(-4.5, 4.5), q(4.5, 4.5)], top = Math.min(...corners.map(c => c.y)) - 1.9 * q(0, -4).k, bot = Math.max(...corners.map(c => c.y)), lft = Math.min(...corners.map(c => c.x)), rgt = Math.max(...corners.map(c => c.x));
+      const hit = []; for (const id of ['hint', 'turnBadge', 'mePlate', 'oppPlate']) { const r = document.getElementById(id).getBoundingClientRect(); if (r.width && !(r.right < lft || r.left > rgt || r.bottom < top || r.top > bot)) hit.push(id); }
+      const bar = document.querySelector('.bar').getBoundingClientRect(); if (!(bar.right < lft || bar.left > rgt || bar.bottom < top || bar.top > bot)) hit.push('bar');
+      return { hit, board: [lft, top, rgt, bot].map(Math.round) };
+    });
+    ok('fekvő képernyőn semmi nem takarja a táblát', L.hit.length === 0, L);
+    await c12.close();
+  }
   ok('nincs oldal-hiba a teszt során', errs.length === 0, errs.slice(0, 3));
   await b.close(); srv.close(); console.log(`\nFüsttesztek: ${pass} sikeres, ${fail} hibás`); process.exit(fail ? 1 : 0);
 })();
