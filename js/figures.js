@@ -2,7 +2,8 @@
 (function (root) {
   'use strict';
   const S = Sprites, TAU = Math.PI * 2;
-  const HEIGHT = { P: 1.45, R: 1.6, B: 1.8, N: 1.55, Q: 1.95, K: 2.05 };
+  /* Arányos magasságok (fejtető-talp, világegységben; 1 egység = 1 mező): gyalog < bástya < futó < királynő < király, a lovas lovastul a legmagasabb. */
+  const HEIGHT = { P: 1.25, R: 1.4, B: 1.55, N: 1.8, Q: 1.75, K: 1.85 };
   const SIDE_LEFT = { K: true, Q: true, N: true, B: true, R: false, P: false };      // az oldalnézeti kép merre néz
   const HEAD = { // fej-téglalap a kép arányában [x0,y0,x1,y1]
     front: { K: [.18, 0, .82, .28], Q: [.2, 0, .8, .2], P: [.1, 0, .9, .37], B: [.3, 0, .8, .2], N: [.36, 0, .62, .2], R: [.12, 0, .88, .33] },
@@ -10,13 +11,21 @@
     side:  { K: [.15, 0, .7, .27], Q: [.25, 0, .85, .22], P: [.1, 0, .8, .38], B: [.3, 0, .8, .2], N: [.32, 0, .64, .26], R: [.1, 0, .9, .35] },
   };
   const ARMY_COLOR = { white: '#e6f3ff', black: '#7a3af0', red: '#ff3a2a', gold: '#ffc200' };
-  const imgs = {}, sil = {}, loading = {}; let meta = null;
+  const imgs = {}, sil = {}, loading = {}; let meta = {};
   const F = { ready: false, HEIGHT, ARMY_COLOR };
   Object.assign(S.HEIGHT, HEIGHT);
 
   function key(t, v, a) { return t + '_' + v + '_' + a; }
+  /* A talapzat levágása után a fej-téglalap arányai változnak: x' = (x - xo) * xr, y' = y * ratio (meta.json, tools/make_sprites.py) */
+  function hrect(v, t) {
+    const r = HEAD[v][t], m = meta[t + '_' + v]; if (!m) return r.slice();
+    const cl = q => Math.max(0, Math.min(1, q));
+    return [cl((r[0] - m.xo) * m.xr), cl(r[1] * m.ratio), cl((r[2] - m.xo) * m.xr), cl(r[3] * m.ratio)];
+  }
   F.load = function (armies) {
     const jobs = [];
+    if (!F._metaP) F._metaP = fetch('assets/figs/meta.json').then(r => r.json()).then(j => { meta = j; }).catch(() => {});
+    jobs.push(F._metaP);
     for (const a of armies) {
       if (loading[a]) { jobs.push(loading[a]); continue; }
       const list = [];
@@ -45,8 +54,8 @@
     g.drawImage(im, 0, 0); g.globalCompositeOperation = 'source-in'; g.fillStyle = col; g.fillRect(0, 0, c.width, c.height); return (sil[kk] = c);
   }
   F.headInfo = function (e) {
-    const army = e.army || e.color === 'w' ? e.theme.id : e.theme.id; const vw = view(e), k = key(e.type, vw.v, e.theme.id), im = imgs[k]; if (!im) return null;
-    const r = HEAD[vw.v][e.type]; let [x0, y0, x1, y1] = r; if (vw.mirror) { const t = 1 - x1; x1 = 1 - x0; x0 = t; }
+    const vw = view(e), k = key(e.type, vw.v, e.theme.id), im = imgs[k]; if (!im) return null;
+    const r = hrect(vw.v, e.type); let [x0, y0, x1, y1] = r; if (vw.mirror) { const t = 1 - x1; x1 = 1 - x0; x0 = t; }
     const hu = HEIGHT[e.type] / im.height;
     return { img: im, sx: x0 * im.width, sy: y0 * im.height, sw: (x1 - x0) * im.width, sh: (y1 - y0) * im.height, w: (x1 - x0) * im.width * hu, h: (y1 - y0) * im.height * hu, mirror: vw.mirror };
   };
@@ -64,7 +73,7 @@
     ctx.scale(e.sx * (1 - sw * 0.008) * squash, e.sy * (1 + sw * 0.012) * stretch);
     if (e.hurt > 0.05) ctx.translate((Math.random() - 0.5) * 0.07 * e.hurt, 0);
     ctx.scale(vw.mirror ? -1 : 1, 1);
-    const hd = HEAD[vw.v][e.type], x0 = hd[0], y0 = hd[1], x1 = hd[2], y1 = hd[3];
+    const hd = hrect(vw.v, e.type), x0 = hd[0], y0 = hd[1], x1 = hd[2], y1 = hd[3];
     const hx = -w / 2 + x0 * w, hy = -h + y0 * h, hw = (x1 - x0) * w, hh = (y1 - y0) * h;
     // test: a nyak körüli lyuk kimarad a testből, a fej külön forog
     ctx.save(); ctx.beginPath(); ctx.rect(-w, -h * 1.4, w * 2, h * 1.8); ctx.rect(hx, hy, hw, hh); ctx.clip('evenodd'); ctx.drawImage(im, -w / 2, -h, w, h); ctx.restore();

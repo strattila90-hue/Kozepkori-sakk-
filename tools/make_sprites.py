@@ -9,6 +9,11 @@ SRC = os.path.join(os.path.dirname(__file__), '..', 'assets', 'src')
 OUT = os.path.join(os.path.dirname(__file__), '..', 'assets', 'figs')
 H = 340
 
+# Talp-vonal: a forrás-kép magasságának hányada, ami alatt a talapzat van (levágjuk, a bábuk a saját lábukon járnak).
+FOOT = {'K_front': .83, 'Q_front': .845, 'P_front': .775, 'B_front': .80, 'N_front': None, 'R_front': .79,
+        'K_back': .815, 'Q_back': .81, 'P_back': .79, 'B_back': .82, 'N_back': None, 'R_back': .84,
+        'K_side': .775, 'Q_side': .81, 'P_side': .81, 'B_side': .82, 'N_side': None, 'R_side': .80}
+
 def bg_mask(a, bottom=True):
     near = (a[..., :3].min(axis=2) >= 240)
     bg = np.zeros_like(near)
@@ -37,8 +42,9 @@ def cut(path, H=H, crop_y=None):
     out = np.dstack([rgb, al_np * 255]).astype(np.uint8)
     img = Image.fromarray(out, 'RGBA')
     bb = img.getchannel('A').point(lambda v: 255 if v > 12 else 0).getbbox()
-    img = img.crop((max(0, bb[0] - 2), max(0, bb[1] - 2), min(img.width, bb[2] + 2), min(img.height, bb[3] + 2)))
-    w = round(img.width * H / img.height)
+    box = (max(0, bb[0] - 2), max(0, bb[1] - 2), min(img.width, bb[2] + 2), min(img.height, bb[3] + 2)); cut.last_box = box
+    img = img.crop(box)
+    w = round(img.width * H / img.height); cut.last_h = img.height
     return img.resize((w, H), Image.LANCZOS)
 
 def rgb2hsv(rgb):
@@ -101,7 +107,8 @@ def tint(img, army, ptype):
     return Image.fromarray((np.clip(res, 0, 1) * 255).astype(np.uint8), 'RGBA')
 
 def main():
-    os.makedirs(OUT, exist_ok=True); meta = {}
+    os.makedirs(OUT, exist_ok=True)
+    mp = os.path.join(OUT, 'meta.json'); meta = json.load(open(mp)) if os.path.exists(mp) else {}
     EX = {'x_castle': (None, 420), 'x_tavern': (None, 420), 'x_pigfarm': (None, 360), 'x_crowd1': (0.755, 360), 'x_crowd2': (0.69, 360), 'x_crowd4': (0.765, 360)}
 
     for f in ([] if 'figs' in sys.argv else sorted(glob.glob(os.path.join(SRC, 'x_*.jpg')))):
@@ -116,10 +123,15 @@ def main():
         im.save(os.path.join(OUT, key + '.webp'), 'WEBP', quality=84, method=6); meta[key] = {'w': im.width, 'h': im.height}; print(key, im.size)
     for f in sorted(glob.glob(os.path.join(SRC, '[A-Z]_*.jpg'))):
         key = os.path.basename(f)[:-4]; ptype, view = key.split('_')
-        base = cut(f); meta[key] = {'w': base.width, 'h': base.height}
+        if len(sys.argv) > 1 and sys.argv[1] not in ('figs',) and sys.argv[1] not in key: continue
+        cut(f); full_h = cut.last_h; fb = cut.last_box
+        fy = FOOT.get(key); base = cut(f, H, fy) if fy else cut(f); nb = cut.last_box
+        fw = fb[2] - fb[0]
+        # a fej-téglalapok átszámításához: új = (régi * régi_méret - eltolás) / új_méret
+        meta[key] = {'w': base.width, 'h': base.height, 'ratio': round(full_h / cut.last_h, 4), 'xo': round((nb[0] - fb[0]) / fw, 4), 'xr': round(fw / (nb[2] - nb[0]), 4)}
         for army in ('white', 'black', 'red', 'gold'):
             tint(base, army, ptype).save(os.path.join(OUT, f'{key}_{army}.webp'), 'WEBP', quality=84, method=6)
-        print(key, base.size)
+        print(key, base.size, meta[key]['ratio'], flush=True)
     json.dump(meta, open(os.path.join(OUT, 'meta.json'), 'w'))
 
 if __name__ == '__main__': main()

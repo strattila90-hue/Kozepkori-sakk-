@@ -2,7 +2,6 @@
 (function (root) {
   'use strict';
   const S = Sprites, TAU = Math.PI * 2, OL = '#1c1310', rnd = (a, b) => a + Math.random() * (b - a);
-  const W = () => root.W;
   const wood = '#8a5a2b', woodD = '#5b3a1a';
   function plank(c, x, y, w, h) { S.rrect(c, x, y, w, h, 0.02, wood, 0.02); c.strokeStyle = 'rgba(40,20,5,.45)'; c.lineWidth = 0.012; c.beginPath(); c.moveTo(x + w * 0.1, y + h * 0.4); c.lineTo(x + w * 0.9, y + h * 0.45); c.stroke(); }
   function bloodPool(c, x, y, r) { c.fillStyle = 'rgba(130,12,12,.75)'; c.beginPath(); c.ellipse(x, y, r, r * 0.28, 0, 0, TAU); c.fill(); c.fillStyle = 'rgba(190,28,28,.5)'; c.beginPath(); c.ellipse(x - r * 0.2, y - 0.01, r * 0.55, r * 0.14, 0, 0, TAU); c.fill(); }

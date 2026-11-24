@@ -127,7 +127,7 @@
       f.frequency.exponentialRampToValueAtTime(3000, t + 0.28);
     },
     chop() { // bárd
-      if (!ok()) return; const t = now();
+      if (!ok()) return;
       S.whoosh(); setTimeout(() => { if (!ok()) return; const u = now(); osc('sine', 90, 30, u, 0.4, 0.8); noise(u, 0.2, 0.5, 'lowpass', 500, 1); }, 160);
     },
     roar() { // sárkány

@@ -103,3 +103,4 @@ input,select{font-size:19px!important;color:#120a06!important}
 #turnBadge{font-size:17px}
 #toast{text-shadow:0 3px 0 #1c1310,0 0 3px #1c1310,0 0 22px rgba(0,0,0,.7);-webkit-text-stroke:2.5px #1c1310}
 .btns button small{font-size:10.5px!important;font-weight:700}
+#promoBtns button{font:700 22px/1.1 'IM Fell English',Georgia,serif!important;font-family:'UnifrakturCook','IM Fell English',serif!important;padding:14px 8px}

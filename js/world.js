@@ -43,7 +43,7 @@
     const fW = 0.985 * w * dn / 9, fH = 0.6 * h / (4.5 * cam.sinP * (1 / dn + 1 / df));
     cam.F0 = Math.min(fW, fH); cam.bx = w / 2; cam.by = h * 0.5 + 6;
     if (!keepCam) { cam.zoom = cam.tz = 1; cam.F = cam.F0; cam.cx = cam.tcx = cam.bx; cam.cy = cam.tcy = cam.by; W.userCam = false; }
-    for (const k in layers) delete layers[k]; shGrad = null; vigKey = '';
+    for (const k in layers) delete layers[k]; shGrad = null;
   };
   function clampPan() {
     const F = cam.F0 * cam.tz, dn = cam.D - 4.5 * cam.cosP, halfW = 4.5 * F / dn, halfH = 4.5 * cam.sinP * F / cam.D;
@@ -201,7 +201,6 @@
   }
 
   /* ---------- Rajzolás ---------- */
-  const lerp = (a, b, t) => a + (b - a) * t;
   function quad(x0, z0, x1, z1, y) {
     const a = W.P(x0, y || 0, z0), b = W.P(x1, y || 0, z0), c = W.P(x1, y || 0, z1), d = W.P(x0, y || 0, z1);
     ctx.beginPath(); ctx.moveTo(a.x, a.y); ctx.lineTo(b.x, b.y); ctx.lineTo(c.x, c.y); ctx.lineTo(d.x, d.y); ctx.closePath();
@@ -228,7 +227,7 @@
     }
   }
 
-  let skyC = null, skyKey = '', gndC = null, gndKey = '', vigG = null, vigKey = '';
+  let skyC = null, skyKey = '', gndC = null, gndKey = '', vigG = null;
   function skyCache(w, hz) {
     const key = w + 'x' + (hz | 0) + 'x' + dpr; if (skyKey === key) return skyC; skyKey = key;
     const c = document.createElement('canvas'); c.width = Math.ceil(w * dpr); c.height = Math.ceil((hz + 4) * dpr); const g = c.getContext('2d'); g.scale(dpr, dpr);
@@ -414,7 +413,7 @@
     const sel = W.hl.sel;
     if (sel >= 0) { const q = W.sqPos(sel); quad(q.x - 0.5, q.z - 0.5, q.x + 0.5, q.z + 0.5, 0); ctx.fillStyle = 'rgba(120,255,120,.4)'; ctx.fill(); ctx.strokeStyle = '#2f7a2f'; ctx.lineWidth = 3; ctx.stroke(); }
     for (const t of W.hl.targets) {
-      const q = W.sqPos(t.sq), p = W.P(q.x, 0, q.z), pulse = 1 + 0.12 * Math.sin(W.time * 6);
+      const q = W.sqPos(t.sq);
       if (t.cap) { quad(q.x - 0.5, q.z - 0.5, q.x + 0.5, q.z + 0.5, 0); ctx.fillStyle = 'rgba(200,30,30,.42)'; ctx.fill(); ctx.strokeStyle = '#8a1010'; ctx.lineWidth = 3; ctx.stroke(); }
       else { quad(q.x - 0.5, q.z - 0.5, q.x + 0.5, q.z + 0.5, 0); ctx.fillStyle = 'rgba(80,200,90,.22)'; ctx.fill(); }
     }
@@ -476,9 +475,9 @@
     if (!bodyMode && e.state !== 'dead') shadow(X, Z, 0.38 * (1 - Math.min(0.6, e.y * 0.25)));
     else shadow(X, Z, e.state === 'dead' ? 0.6 : 0.4, 0.25);
     const fig = Figures.ready && Figures.has(e.theme.id);
-    if (fig && e.state !== 'dead' && !bodyMode) {
-      const pr = W.P(X, 0, Z); ctx.beginPath(); ctx.ellipse(pr.x, pr.y, 0.4 * pr.k, 0.4 * pr.k * cam.sinP, 0, 0, TAU);
-      ctx.fillStyle = Figures.ARMY_COLOR[e.theme.id]; ctx.globalAlpha = 0.9; ctx.fill(); ctx.globalAlpha = 1; ctx.lineWidth = Math.max(2.5, pr.k * 0.06); ctx.strokeStyle = '#1c1310'; ctx.stroke(); ctx.lineWidth = Math.max(1.2, pr.k * 0.025); ctx.strokeStyle = 'rgba(255,255,255,.75)'; ctx.stroke();
+    if (fig && e.state !== 'dead' && !bodyMode) {   // seregjelző: vékony színes gyűrű a láb körül (nincs talapzat, a bábu a saját lábán áll)
+      const pr = W.P(X, 0, Z), R = 0.36; ctx.beginPath(); ctx.ellipse(pr.x, pr.y, R * pr.k, R * pr.k * cam.sinP, 0, 0, TAU);
+      ctx.lineWidth = Math.max(3.5, pr.k * 0.085); ctx.strokeStyle = '#1c1310'; ctx.stroke(); ctx.lineWidth = Math.max(2, pr.k * 0.05); ctx.strokeStyle = Figures.ARMY_COLOR[e.theme.id]; ctx.stroke();
     }
     if (fig && e.crown && e.state !== 'dead') { const gp = W.P(X, 0.9, Z), gr = ctx.createRadialGradient(gp.x, gp.y, 0, gp.x, gp.y, gp.k * 1.1); gr.addColorStop(0, 'rgba(255,225,110,.65)'); gr.addColorStop(1, 'rgba(255,225,110,0)'); ctx.fillStyle = gr; ctx.fillRect(gp.x - gp.k * 1.2, gp.y - gp.k * 1.2, gp.k * 2.4, gp.k * 2.4); }
     if (fig) {
@@ -602,7 +601,8 @@
 
   function frame(ts) {
     requestAnimationFrame(frame);
-    const dt = Math.min(0.05, (ts - last) / 1000 || 0.016) * W.speed * (W.skip ? 2.6 : 1); last = ts;
+    const rawDt = Math.min(0.05, (ts - last) / 1000 || 0.016); let dt = rawDt * W.speed * (W.skip ? 2.6 : 1); last = ts;
+    if (W.hitstop > 0) { W.hitstop -= rawDt; dt = 0; }
     W.time += dt;
     { const raw = (ts - (W._lt || ts)) / 1000; W._lt = ts;
       if (W.autoQ && raw > 0 && raw < 0.5 && !document.hidden) { W._ema = (W._ema || 0.016) * 0.93 + raw * 0.07; W._n = (W._n || 0) + 1;
@@ -646,9 +646,9 @@
       const d = W.dragonFx, p = W.P(d.x, d.y, d.z), key = 'dragon_' + (d.pose || 'front');
       if (Figures.extra(key)) {
         const flap = Math.sin(W.time * (d.y > 1.5 ? 9 : 5)) * 0.04, step = d.walk ? Math.sin(W.time * 9) : 0, br = d.breath ? Math.sin(W.time * 22) * 0.015 : 0;
-        shadow(d.x, d.z, 1.4 * (1 - Math.min(0.6, d.y * 0.1)), 0.35);
+        shadow(d.x, d.z, (d.h || 3.4) * 0.3, 0.35);
         ctx.save(); ctx.translate(p.x, p.y - Math.abs(step) * 0.14 * p.k); ctx.rotate(step * 0.05 + (d.y > 1.5 ? Math.sin(W.time * 3) * 0.03 : 0)); ctx.scale(p.k * (1 + flap + br), p.k * (1 - flap * 0.8 - br)); Figures.sprite(ctx, key, d.h || 3.4, 0); ctx.restore();
-        if (d.breath) { const gp = W.P(d.x, d.y + (d.h || 3.4) * 0.48, d.z), gg = ctx.createRadialGradient(gp.x, gp.y, 0, gp.x, gp.y, gp.k * 1.6); gg.addColorStop(0, 'rgba(255,170,40,.55)'); gg.addColorStop(1, 'rgba(255,100,0,0)'); ctx.fillStyle = gg; ctx.fillRect(gp.x - gp.k * 1.7, gp.y - gp.k * 1.7, gp.k * 3.4, gp.k * 3.4); }
+        if (d.breath) { const gp = W.P(d.x, d.y + (d.h || 3.4) * 0.7, d.z), gg = ctx.createRadialGradient(gp.x, gp.y, 0, gp.x, gp.y, gp.k * 1.7); gg.addColorStop(0, 'rgba(255,170,40,.38)'); gg.addColorStop(1, 'rgba(255,100,0,0)'); ctx.fillStyle = gg; ctx.fillRect(gp.x - gp.k * 1.8, gp.y - gp.k * 1.8, gp.k * 3.6, gp.k * 3.6); }
       }
       else { ctx.save(); ctx.translate(p.x, p.y); ctx.scale(p.k * (d.face || 1), p.k); S.dragon(ctx, d, W.time); ctx.restore(); }
     }

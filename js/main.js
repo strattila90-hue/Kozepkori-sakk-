@@ -5,7 +5,7 @@
   const THEME_IDS = ['white', 'black', 'red', 'gold'];
   const sleep = ms => new Promise(r => setTimeout(r, ms));
   const G = { mode: null, chess: null, mySide: null, level: 2, code: null, role: null, unsub: null, over: false, queue: [], pumping: false, sel: -1, room: null, lastEmote: 0, themeIds: { w: 'white', b: 'black' }, names: { w: 'Világos', b: 'Sötét' }, gen: 0 };
-  let myTheme = 'white', hostSide = 'w', toastTimer = null;
+  let myTheme = 'white', hostSide = 'w', botSide = 'w', toastTimer = null;
   const store = { get: k => { try { return localStorage.getItem(k); } catch (e) { return null; } }, set: (k, v) => { try { localStorage.setItem(k, v); } catch (e) { /* nincs tár */ } } };
 
   window.UI = {
@@ -23,7 +23,7 @@
       for (let r = 0; r < n; r++) for (let c = 0; c < n; c++) if (qr.isDark(r, c)) g.fillRect(off + c * px, off + r * px, px, px);
     } catch (e) { console.warn('QR', e); }
   }
-  const APP_V = '0.9.1'; let deferredInstall = null, swReg = null, newWorker = null;
+  const APP_V = '0.9.2'; let deferredInstall = null, swReg = null, newWorker = null;
   const isStandalone = () => window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone;
   function showUpdateBanner(txt) {
     if ($('updBanner')) return; const d = document.createElement('div'); d.id = 'updBanner'; d.innerHTML = '<span></span><button>Betöltöm!</button>'; d.firstChild.textContent = txt; d.lastChild.onclick = applyUpdate; document.body.appendChild(d);
@@ -115,7 +115,6 @@
     SFX.init(); const t = myTheme; begin({ mode: 'local', mySide: null, names: { w: myName(), b: 'Ellenfél' }, themeIds: { w: t, b: otherTheme(t) } });
     $('meName').textContent = G.names.w; $('oppName').textContent = G.names.b;
   }
-  let botSide = 'w';
   function startBot(level) {
     SFX.init(); G.level = level; const t = myTheme, lv = ['', 'Részeg jobbágy', 'Falusi bíró', 'Hadúr'][level];
     const me = botSide === 'r' ? (Math.random() < 0.5 ? 'w' : 'b') : botSide, other = me === 'w' ? 'b' : 'w';
@@ -254,8 +253,8 @@
   function askPromo(white) {
     return new Promise(res => {
       const box = $('promoBtns'); box.innerHTML = '';
-      for (const [t, ch] of [['q', white ? '♕' : '♛'], ['r', white ? '♖' : '♜'], ['b', white ? '♗' : '♝'], ['n', white ? '♘' : '♞']]) {
-        const b = document.createElement('button'); b.className = 'big'; b.textContent = ch; b.onclick = () => { hideAll(); res(t); }; box.appendChild(b);
+      for (const [t, name] of [['q', 'Királynő'], ['r', 'Bástya'], ['b', 'Futó'], ['n', 'Huszár']]) {
+        const b = document.createElement('button'); b.className = 'big'; b.textContent = name; b.onclick = () => { hideAll(); res(t); }; box.appendChild(b);
       }
       show('promo');
     });
@@ -270,7 +269,7 @@
     W.godOn = !G.over && mine && G.mode !== 'local';
     W.turn = G.over ? null : G.chess.turn;
     const bottom = G.mySide || 'w'; $('mePlate').classList.toggle('active', !G.over && G.chess.turn === bottom); $('oppPlate').classList.toggle('active', !G.over && G.chess.turn !== bottom);
-    if (!G.over) { const th = S.THEMES[G.themeIds[G.chess.turn]]; t.innerHTML = '<span class="sw" style="background:' + th.hex + ';margin-right:8px"></span>' + t.textContent; t.style.borderColor = th.hex; }
+    if (!G.over) { const th = S.THEMES[G.themeIds[G.chess.turn]], txt = t.textContent; t.textContent = ''; const dot = document.createElement('span'); dot.className = 'sw'; dot.style.cssText = 'background:' + th.hex + ';margin-right:8px'; t.append(dot, txt); t.style.borderColor = th.hex; }
     { const start = { P: 8, N: 2, B: 2, R: 2, Q: 1 }, nm = { P: 'gyalog', N: 'huszár', B: 'futó', R: 'bástya', Q: 'királynő' }, cnt = { w: {}, b: {} };
       for (const ch of G.chess.board) if (ch && ch.toUpperCase() !== 'K') { const c = Chess.colorOf(ch), t = ch.toUpperCase(); cnt[c][t] = (cnt[c][t] || 0) + 1; }
       const lost = c => Object.keys(start).map(t => { const n = start[t] - (cnt[c][t] || 0); return n > 0 ? n + ' ' + nm[t] : ''; }).filter(Boolean).join(', ');
@@ -287,7 +286,7 @@
   function initInput() {
     const c = W.getCanvas();
     // érintés / egér: koppintás = kijelölés, két ujj = nagyítás, nagyítva egy ujj = mozgatás
-    const ptrs = new Map(); let pinch = null, moved = 0, tapOk = true, lastTap = 0;
+    const ptrs = new Map(); let pinch = null, moved = 0, tapOk = true;
     const pos = e => { const r = c.getBoundingClientRect(); return { x: e.clientX - r.left, y: e.clientY - r.top }; };
     c.addEventListener('pointerdown', e => {
       SFX.init(); if (W.busy && !W.skip) { W.skip = true; UI.toast('Gyorsabb mészárlás!'); } c.setPointerCapture && c.setPointerCapture(e.pointerId); const p = pos(e); ptrs.set(e.pointerId, p);
