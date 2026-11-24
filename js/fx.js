@@ -3,8 +3,8 @@
   'use strict';
   const W = root.W, S = Sprites, SFX = root.SFX, TAU = Math.PI * 2;
   const { tw, wait, ease, rnd, pick, clamp } = W;
-  const OW = ['Au!', 'Jaj nekem!', 'Szent Mihály!', 'Az orrom!', 'Irgalom!', 'A lábam!', 'Hóóó!', 'Isten ments!', 'A fogam!'];
-  const BATTLE = ['Hááá!', 'Pusztulj, gazember!', 'Nyam!', 'Megbánod, kutya!', 'Lám, vas!', 'Hajrá!', 'Dicsőség!'];
+  const OW_OLD = ['Au!', 'Jaj nekem!', 'Szent Mihály!', 'Az orrom!', 'Irgalom!', 'A lábam!', 'Hóóó!', 'Isten ments!', 'A fogam!'];
+  const BATTLE_OLD = ['Hááá!', 'Pusztulj, gazember!', 'Nyam!', 'Megbánod, kutya!', 'Lám, vas!', 'Hajrá!', 'Dicsőség!'];
   const neckY = e => S.HEIGHT[e.type] * 0.72;
   const scrDir = (a, b) => ((b.x - a.x) * (W.flip ? -1 : 1) >= 0 ? 1 : -1);
   W.idleBusy = 0;
@@ -42,7 +42,7 @@
     const jobs = [hop(att, to.x, to.z, isN ? 0.7 : 0.35 + dist * 0.1, isN ? 1.1 : 0.3, isN ? 1 : Math.max(1, Math.round(dist / 1.2)))];
     if (m.castle) {
       const rf = m.castle === 'K' ? m.from + 3 : m.from - 4, rt = m.castle === 'K' ? m.from + 1 : m.from - 1, r = W.pieceAt(rf);
-      if (r) { const p = W.sqPos(rt); r.sq = rt; jobs.push(hop(r, p.x, p.z, 0.6, 0.5, 2)); W.say(r, 'Vár, hé!', 1.2); }
+      if (r) { const p = W.sqPos(rt); r.sq = rt; jobs.push(hop(r, p.x, p.z, 0.6, 0.5, 2)); W.say(r, L.pick('castle'), 1.4); }
     }
     await Promise.all(jobs);
   }
@@ -53,7 +53,7 @@
     const hx = y.x, hz = y.z, hy = S.HEIGHT[y.type] * 0.55;
     if (o.blood) {
       SFX.stab(); y.hurt = 1; blood(hx, hy, hz, o.lethal ? 22 : 10, ux, uz, 1.5); W.decal(hx + rnd(-0.3, 0.3), hz + rnd(-0.3, 0.3), 0.15);
-      W.say(y, pick(OW), 0.9); SFX.ow(); W.shake = Math.max(W.shake, o.lethal ? 0.6 : 0.25);
+      W.say(y, o.lethal ? L.pick('dying') : L.pick('hurt'), o.lethal ? 2.6 : 1.5); if (Math.random() < 0.5) SFX.ow(); W.shake = Math.max(W.shake, o.lethal ? 0.6 : 0.25);
     } else { SFX.clang(); sparks(hx, hy, hz); y.hurt = 0.6; }
     y.ox = ux * 0.13; y.oz = uz * 0.13;
     await Promise.all([
@@ -98,7 +98,7 @@
       await tw({ p: 0 }, { p: 1 }, 0.95, ease.lin, (o) => { v.x = sx + (edge.x - sx) * o.p; v.z = sz + (edge.z - sz) * o.p; v.y = Math.sin(o.p * Math.PI) * 4.2; v.rot = spin * o.p; });
       v.rot = 1.5 * dirSign; v.y = 0; v.state = 'dead'; SFX.thud(); puff(v.x, 0.1, v.z, 5, '#b9a77a', 0.8);
     } else { // topple
-      v.expr = 'pain'; W.say(v, pick(OW), 1); SFX.scream(); blood(v.x, 0.6, v.z, 18, 0, 0, 1);
+      v.expr = 'pain'; W.say(v, L.pick('dying'), 2); SFX.scream(); blood(v.x, 0.6, v.z, 18, 0, 0, 1);
       await wait(0.4); await fall(v, dirSign);
     }
     v.busyAnim = false;
@@ -135,7 +135,7 @@
       };
       await walkTo(tx, tz, kind === 'peasant' ? 1.6 : 1.2);
       if (kind === 'peasant') {
-        actor.say = { text: pick(['Vacsora!', 'Ez még jó!', 'Mehet a levesbe!', 'Hehe, enyém!']), t: 1.5 };
+        actor.say = { text: L.pick('scav'), t: 2 };
         const bx0 = b.x, bz0 = b.z, ox = outX || 0, oz = outZ || (outX ? 0 : 1);
         const gx = actor.x + ox * 3.2, gz = actor.z + oz * 3.2;
         const sx = actor.x, sz = actor.z; actor.face = (ox * (W.flip ? -1 : 1) >= 0 && ox !== 0) ? 1 : (ox === 0 ? actor.face : -1);
@@ -166,8 +166,7 @@
     SFX.hop();
     await hop(att, v.x - ux * 0.9, v.z - uz * 0.9, isN ? 0.65 : 0.3 + dist * 0.09, isN ? 1 : 0.3, isN ? 1 : Math.max(1, Math.round(dist / 1.2)));
     W.faceTo(att, v.x); W.faceTo(v, att.x);
-    W.say(att, pick(BATTLE), 1.1); W.setCheer(3.5); SFX.cheer();
-    await wait(0.25);
+    { const t1 = L.pick('engage'), t2 = L.pick('reply'); W.say(att, t1, L.dur(t1) + 0.4); W.setCheer(3.5); SFX.cheer(); await wait(1.3); W.say(v, t2, L.dur(t2), 1.3); await wait(1.3); }
     const rounds = 1 + (Math.random() < 0.6 ? 1 : 0) + (Math.random() < 0.35 ? 1 : 0);
     for (let i = 0; i < rounds; i++) {
       await strike(att, v, ux, uz, { blood: true });
@@ -194,7 +193,7 @@
       W.actors.push(pile);
       setTimeout(() => scavengePile(pile), 600);
     }
-    W.setCheer(2.5); SFX.cheer();
+    W.setCheer(2.5); SFX.cheer(); W.crowdSay(L.pick('crowd'));
   }
   async function scavengePile(pile) {
     // egy kutya vagy malac eszi meg a maradékot
@@ -216,22 +215,22 @@
     W.busy = true; W.hl.sel = -1; W.hl.targets = []; W.hl.check = -1;
     try {
       const att = W.pieceAt(m.from); if (!att) return;
-      att.busyAnim = false;
+      att.busyAnim = false; W.moverEnt = att; W.hl.last = [m.from, m.to]; W.hl.arrow = { from: m.from, to: m.to };
       const to = W.sqPos(m.to);
       const victim = m.cap ? W.pieceAt(m.capSq) : null;
       if (victim) await fight(att, victim, m); else await travel(att, to, m);
       att.sq = m.to; att.x = to.x; att.z = to.z; att.y = 0;
       if (m.promo) {
-        att.type = m.promo.toUpperCase(); SFX.ding(); puff(att.x, 0.6, att.z, 14, '#fff3c0', 1.6); W.say(att, 'Nemessé ütöttek!', 1.6);
+        att.type = m.promo.toUpperCase(); SFX.ding(); puff(att.x, 0.6, att.z, 14, '#fff3c0', 1.6); W.say(att, L.pick('promo'), 2.4);
         await tw(att, { sy: 1.25 }, 0.12); await tw(att, { sy: 1 }, 0.2);
       }
       W.hl.last = [m.from, m.to];
       if (m.check) {
         const k = W.king(m.color === 'w' ? 'b' : 'w'); SFX.check();
-        if (k) { W.hl.check = k.sq; W.say(k, pick(['Segítség!', 'Jaj nekem!', 'Őrség, hé!']), 1.8); k.hurt = 0.6; setTimeout(() => { k.hurt = 0; }, 900); }
+        if (k) { W.hl.check = k.sq; W.say(k, L.pick('check'), 2.4); k.hurt = 0.6; setTimeout(() => { k.hurt = 0; }, 900); }
         toast(m.status === 'checkmate' ? 'Matt, uram!' : 'Sakk, uram!', 'bad');
       }
-    } finally { W.busy = false; }
+    } finally { W.busy = false; W.moverEnt = null; }
   };
 
   /* ---------- idle piszkálódás ---------- */
@@ -243,14 +242,16 @@
   async function poke(a, b) {
     const dx = b.x - a.x, dz = b.z - a.z, d = Math.hypot(dx, dz) || 1, ux = dx / d, uz = dz / d;
     a.busyAnim = b.busyAnim = true; W.faceTo(a, b.x); W.faceTo(b, a.x);
+    { const t1 = L.pick('taunt'); W.say(a, t1, L.dur(t1)); await wait(1.0); if (Math.random() < 0.6) { const t2 = L.pick('reply'); W.say(b, t2, L.dur(t2), 1.2); await wait(1.0); } }
     a.atk = 0; await tw(a, { atk: 0.5 }, 0.24, ease.lin, (o, p) => { a.ox = ux * 0.13 * p; a.oz = uz * 0.13 * p; });
-    if (Math.random() < 0.7) { SFX.stab(); b.hurt = 1; blood(b.x, 0.6, b.z, 4, ux, uz, 1); W.say(b, pick(OW), 0.9); if (Math.random() < 0.4) SFX.ow(); }
-    else { SFX.clang(); sparks(b.x - ux * 0.3, 0.6, b.z - uz * 0.3); W.say(b, pick(['Ha!', 'Nem találtál!', 'Hmpf!']), 0.9); }
+    if (Math.random() < 0.7) { SFX.stab(); b.hurt = 1; blood(b.x, 0.6, b.z, 4, ux, uz, 1); W.say(b, L.pick('hurt'), 1.5); if (Math.random() < 0.3) SFX.ow(); }
+    else { SFX.clang(); sparks(b.x - ux * 0.3, 0.6, b.z - uz * 0.3); W.say(b, pick(['Ha! Nem találtál, te nyúlszívű!', 'Hmpf, ez csak horzsolás volt!']), 1.8); }
     await Promise.all([tw(a, { atk: 1 }, 0.2, ease.lin, (o, p) => { a.ox = ux * 0.13 * (1 - p); a.oz = uz * 0.13 * (1 - p); }), tw(b, { hurt: 0 }, 0.4)]);
     a.atk = 0; a.ox = a.oz = 0;
     if (Math.random() < 0.5) { await wait(0.1); b.atk = 0; await tw(b, { atk: 0.55 }, 0.28, ease.lin); SFX.clang(); await tw(b, { atk: 1 }, 0.2, ease.lin); b.atk = 0; a.hurt = 0.5; await tw(a, { hurt: 0 }, 0.3); }
     a.busyAnim = b.busyAnim = false;
   }
+  async function mutter(e) { e.busyAnim = true; const t = L.pick('idle'); W.say(e, t, L.dur(t)); await wait(L.dur(t) * 0.8); e.busyAnim = false; }
   async function pfff(e) {
     e.busyAnim = true; SFX.fart(Math.random() < 0.2); W.say(e, pick(['Pfrrrt!', 'Prüüt!', 'Ppppt!', 'Hoppá!']), 1.1);
     const back = -e.face * (W.flip ? -1 : 1) * 0.3;
@@ -272,14 +273,14 @@
     if (W.godOn) W.godHand = Math.min(1, W.godHand + dt * 2);
     if (W.busy || W.ending || !W.idleOn) return;
     W.idleT -= dt; if (W.idleT > 0) return;
-    W.idleT = rnd(1.6, 3.6);
+    W.idleT = rnd(3.5, 6.5);
     const ps = W.pieces.filter(e => e.state !== 'dead' && !e.busyAnim); if (ps.length < 3) return;
     W.idleBusy++;
     const done = () => { W.idleBusy--; };
     const r = Math.random(); let p;
     const pairs = r < 0.5 ? adjacentEnemies().filter(([a, b]) => !a.busyAnim && !b.busyAnim) : [];
     if (pairs.length) { const [a, b] = pick(pairs); p = poke(a, b); }
-    else { const e = pick(ps); p = (r < 0.72 ? pfff : r < 0.82 ? honk : r < 0.92 ? laugh : burp)(e); }
+    else { const e = pick(ps); p = mutter(e); }
     p.then(done, done);
   };
 
@@ -291,13 +292,13 @@
     if (k) {
       W.crownFx = { x: k.x, y: 6.5, z: k.z };
       await tw(W.crownFx, { y: S.HEIGHT.K + 0.5 }, 1.4, ease.eout);
-      k.crown = true; W.crownFx = null; SFX.ding(); W.say(k, 'Éljen a király!', 2);
+      k.crown = true; W.crownFx = null; SFX.ding(); W.say(k, L.pick('win'), 3);
       puff(k.x, 1.8, k.z, 10, '#fff3c0', 1.4);
     }
   }
   async function burnDie(e) {
     e.busyAnim = true; e.burn = 1; SFX.scream();
-    for (let i = 0; i < 4; i++) { W.say(e, pick(['AAAA!', 'Ég a fenekem!', 'Segítség!']), 0.6); await hop(e, clamp(e.x + rnd(-1.2, 1.2), -3.5, 3.5), clamp(e.z + rnd(-1.2, 1.2), -3.5, 3.5), 0.35, 0.35, 1); }
+    for (let i = 0; i < 4; i++) { W.say(e, L.pick('burn'), 0.9); await hop(e, clamp(e.x + rnd(-1.2, 1.2), -3.5, 3.5), clamp(e.z + rnd(-1.2, 1.2), -3.5, 3.5), 0.35, 0.35, 1); }
     e.state = 'dead'; e.cheering = false; await tw(e, { rot: pick([-1.5, 1.5]) }, 0.4, ease.ein); SFX.thud();
     W.every(3, 0.08, () => W.part({ kind: 'smoke', x: e.x + rnd(-0.3, 0.3), y: 0.2, z: e.z, vx: rnd(-0.1, 0.1), vy: 0.6, vz: 0, g: 0, drag: 0.5, size: 0.12, color: '#3a3532', life: 1.3 }));
     e.busyAnim = false;
@@ -333,7 +334,7 @@
       await tw(ex, { swing: 0.85 }, fast ? 0.1 : 0.16, ease.lin); SFX.chop();
       die(e, 'decap', dir, dir, 0); await tw(ex, { swing: 0.4 }, fast ? 0.1 : 0.25); ex.raise = 0;
     };
-    W.say(k, 'Kegyelmezz, uram!', 1.4); await wait(1.0);
+    W.say(k, L.pick('beg'), 2); await wait(1.0);
     await chop(k, false); W.setCheer(5); SFX.cheer(); await wait(1.0);
     const rest = W.pieces.filter(e => e.color === loser && e !== k).sort((a, b) => dir * (a.x - b.x) || a.z - b.z);
     for (const e of rest) { e.busyAnim = true; await walk(e.x - 1.0 * dir, e.z, 0.22); await chop(e, true); }
@@ -349,7 +350,7 @@
       const mx = (a.x + b.x) / 2, mz = (a.z + b.z) / 2, dx = b.x - a.x, dz = b.z - a.z, d = Math.hypot(dx, dz) || 1, ux = dx / d, uz = dz / d;
       await Promise.all([hop(a, mx - ux * 0.45, mz - uz * 0.45, 0.45, 0.3, 1), hop(b, mx + ux * 0.45, mz + uz * 0.45, 0.45, 0.3, 1)]);
       a.busyAnim = b.busyAnim = true;
-      W.faceTo(a, b.x); W.faceTo(b, a.x); W.say(a, pick(['Áruló!', 'Ez a tiéd!', 'Régi tartozás!']), 0.9);
+      W.faceTo(a, b.x); W.faceTo(b, a.x); W.say(a, L.pick('betray'), 1.6);
       await Promise.all([tw(a, { atk: 0.5 }, 0.3, ease.lin), tw(b, { atk: 0.5 }, 0.3, ease.lin)]);
       SFX.stab(); blood(b.x, 0.75, b.z, 14, ux, uz, 1.2); blood(a.x, 0.75, a.z, 14, -ux, -uz, 1.2);
       await Promise.all([tw(a, { atk: 1 }, 0.2, ease.lin), tw(b, { atk: 1 }, 0.2, ease.lin)]); a.atk = b.atk = 0;
@@ -370,7 +371,7 @@
     for (const e of all) {
       e.busyAnim = true; e.expr = 'pain'; e.cheering = false; e.hurt = 0.8;
       for (let i = 0; i < 7; i++) W.part({ kind: 'dot', x: e.x, y: 0.8, z: e.z, vx: rnd(-0.5, 0.5) + e.face, vy: rnd(0.5, 1.5), vz: rnd(-0.3, 0.3), g: 8, size: 0.05, color: '#9bbf3a', life: 0.8 });
-      W.say(e, pick(['Bleeee!', 'Pestis...', 'Rosszul vagyok']), 0.8); SFX.burp();
+      W.say(e, L.pick('plague'), 1.2); SFX.burp();
       die(e, 'topple', pick([-1, 1])); await wait(0.22);
     }
     await wait(1.5); sk.face = -1; await wait(1.5);

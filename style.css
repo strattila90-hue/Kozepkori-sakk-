@@ -52,3 +52,9 @@ button.big.alt{background:linear-gradient(#d8cdb0,#b3a37a);font-size:17px}
 .wait{margin:16px 0 4px;font-size:17px;font-style:italic}.wait span{animation:bl 1.2s infinite}.wait span:nth-child(2){animation-delay:.2s}.wait span:nth-child(3){animation-delay:.4s}
 @keyframes bl{0%,100%{opacity:.2}50%{opacity:1}}
 #promoBtns{flex-wrap:wrap;justify-content:center}#promoBtns button{flex:1 1 40%;font-size:38px;padding:8px;font-family:serif}
+
+.plate.active{box-shadow:0 0 0 3px #d4a437,0 0 24px rgba(255,210,80,.95);animation:act 1.2s ease-in-out infinite}
+@keyframes act{0%,100%{transform:scale(1)}50%{transform:scale(1.045)}}
+#hud{padding-left:28px;padding-right:28px}#hud .bottom{left:28px;right:28px}
+#turnBadge{display:flex;align-items:center;font-size:16px}
+#turnBadge{top:calc(env(safe-area-inset-top) + 58px)!important}

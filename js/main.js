@@ -217,11 +217,14 @@
   function updateHud() {
     const t = $('turnBadge'), mine = G.mode === 'local' || G.chess.turn === G.mySide;
     if (!G.mode) return;
-    if (G.over) t.textContent = '';
+    if (G.over) { t.textContent = ''; }
     else if (G.mode === 'local') t.textContent = (G.chess.turn === 'w' ? 'Világos' : 'Sötét') + ' lép, uram';
     else if (G.mode === 'online' && !(G.room && G.room.guestId)) t.textContent = 'Az ellenfél még úton van…';
     else t.textContent = mine ? 'A te lépésed, uram!' : 'Ellenfeled töpreng…';
     W.godOn = !G.over && mine && G.mode !== 'local';
+    W.turn = G.over ? null : G.chess.turn;
+    const bottom = G.mySide || 'w'; $('mePlate').classList.toggle('active', !G.over && G.chess.turn === bottom); $('oppPlate').classList.toggle('active', !G.over && G.chess.turn !== bottom);
+    if (!G.over) { const th = S.THEMES[G.themeIds[G.chess.turn]]; t.innerHTML = '<span class="sw" style="background:' + th.hex + ';margin-right:8px"></span>' + t.textContent; t.style.borderColor = th.hex === '#3a3560' ? '#d4a437' : th.hex; }
     $('oppStat').textContent = ''; $('meStat').textContent = '';
     W.hl.check = G.chess.inCheck() ? G.chess.kingSq(G.chess.turn) : -1;
   }
