@@ -22,6 +22,10 @@ Fehér · Fekete · Vörös · Arany (mindenki a sajátját választja; azonos v
 - A győztes királyát megkoronázzák; a vesztes seregét **sárkány** elégeti, **hóhér** lefejezi, vagy egymást **nyakon szúrják**.
 - Döntetlennél a **Fekete Halál** visz el mindenkit.
 
+## v0.9.9
+- **Szebb tábla:** a rikító sárga–fekete helyett tölgy- és diófa intarzia faerezettel, faragott diófa keret arany szegecsekkel.
+- **Nyugodtabb bábujelölés:** a vastag kettős gyűrűk helyett áttetsző, seregszínű talpkorong; a léphető bábuk alatt lágyan pulzáló arany fény; aranyszínű kijelölés, finomabb célpontok.
+
 ## v0.9.8
 - **Olvasható szobakód:** a váróteremben a kód betűnként, külön kockában, jól olvasható betűvel jelenik meg (a gót betű olvashatatlan volt); a kódbeíró mező is ilyen betűt használ. A felugró értesítések is olvashatóbb betűt kaptak, és a „Vár nyitása…” felirat már nem csúszik rá a kódra.
 

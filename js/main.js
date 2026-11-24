@@ -32,7 +32,7 @@
       for (let r = 0; r < n; r++) for (let c = 0; c < n; c++) if (qr.isDark(r, c)) g.fillRect(off + c * px, off + r * px, px, px);
     } catch (e) { console.warn('QR', e); }
   }
-  const APP_V = '0.9.8'; let deferredInstall = null, swReg = null, newWorker = null;
+  const APP_V = '0.9.9'; let deferredInstall = null, swReg = null, newWorker = null;
   const isStandalone = () => window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone;
   function showUpdateBanner(txt) {
     if ($('updBanner')) return; const d = document.createElement('div'); d.id = 'updBanner'; d.innerHTML = '<span></span><button>Betöltöm!</button>'; d.firstChild.textContent = txt; d.lastChild.onclick = applyUpdate; document.body.appendChild(d);
@@ -320,7 +320,7 @@
     if (G.over) hint = ''; else if (G.mode === 'online' && !(G.room && G.room.guestId)) hint = 'Várunk az ellenfélre…';
     else if (!(G.mode === 'local' || mine)) hint = 'Az ellenfél lép – nézd a nyilat!';
     else if (G.sel >= 0) hint = 'Koppints a zöld pontra (lépés) vagy a piros célkeresztre (ütés). Máshová koppintva visszavonod.';
-    else hint = 'Koppints egy saját bábura (arany gyűrűvel jelölt).';
+    else hint = 'Koppints egy saját bábura (arany fény jelöli).';
     hel.textContent = hint;
   }
   W.selectable = sq => { try { if (!canAct()) return false; const pc = G.chess.board[sq]; if (!pc || Chess.colorOf(pc) !== G.chess.turn) return false; if (G.mySide && Chess.colorOf(pc) !== G.mySide) return false; return G.chess.moves().some(m => m.from === sq); } catch (e) { return false; } };
