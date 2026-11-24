@@ -193,3 +193,15 @@ img,svg{-webkit-user-drag:none}
 /* gombnyomás: natív „rugós” visszajelzés */
 #hud .bar .btns button{transition:transform .08s ease,filter .12s}
 #hud .bar .btns button:active{transform:scale(.92)!important;filter:brightness(.92)}
+
+/* ===== v1.3.1: olvasható logó – a díszes P iniciálé marad, a szó Pirata One (olvasható gótikus) ===== */
+.logo{align-items:center;gap:3px}
+.logo .word{font-family:"Pirata One","IM Fell English",Georgia,serif;font-weight:400;font-size:.9em;letter-spacing:.03em;line-height:1;color:#8a1c14;
+  text-shadow:0 1px 0 rgba(255,240,190,.95),0 2px 0 rgba(90,20,10,.25);padding-top:.08em}
+.logo .drop{font-family:"UnifrakturCook",serif;line-height:1}
+#splash .logo .word{color:#e8c258;text-shadow:0 2px 0 #000,0 0 22px rgba(232,194,88,.35)}
+#resTitle .word{font-size:1em}
+#log h3{font:400 17px "Pirata One",Georgia,serif;letter-spacing:.04em}
+#promoBtns button{font:400 24px/1.1 "Pirata One",Georgia,serif!important}
+.card h2{font-family:"Pirata One",Georgia,serif;font-weight:400;font-size:22px;letter-spacing:.03em}
+details.card summary{font-family:"Pirata One",Georgia,serif;font-weight:400;font-size:22px;letter-spacing:.03em}
