@@ -32,7 +32,7 @@
       for (let r = 0; r < n; r++) for (let c = 0; c < n; c++) if (qr.isDark(r, c)) g.fillRect(off + c * px, off + r * px, px, px);
     } catch (e) { console.warn('QR', e); }
   }
-  const APP_V = '1.2.0'; let deferredInstall = null, swReg = null, newWorker = null;
+  const APP_V = '1.3.0'; let deferredInstall = null, swReg = null, newWorker = null;
   const isStandalone = () => window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone;
   function showUpdateBanner(txt) {
     if ($('updBanner')) return; const d = document.createElement('div'); d.id = 'updBanner'; d.innerHTML = '<span></span><button>Betöltöm!</button>'; d.firstChild.textContent = txt; d.lastChild.onclick = applyUpdate; document.body.appendChild(d);
@@ -113,6 +113,7 @@
     $('perfSeg').querySelectorAll('button').forEach(b => { b.classList.toggle('on', b.dataset.v === W.perfMode); b.onclick = () => { W.setPerf(b.dataset.v); $('perfSeg').querySelectorAll('button').forEach(x => x.classList.toggle('on', x === b)); }; });
     $('optFast').onchange = e => { W.speed = e.target.checked ? 1.7 : 1; };
     $('todSeg').querySelectorAll('button').forEach(b => { b.classList.toggle('on', b.dataset.v === W.todMode); b.onclick = () => { W.setTod(b.dataset.v); $('todSeg').querySelectorAll('button').forEach(x => x.classList.toggle('on', x === b)); }; });
+    $('optHaptic').checked = W.haptics; $('optHaptic').onchange = e => { W.haptics = e.target.checked; store.set('ps_haptic', W.haptics ? '1' : '0'); W.buzz(20); };
     W.deathStyle = store.get('ps_death') || 'mixed';
     $('deathSeg').querySelectorAll('button').forEach(b => { b.classList.toggle('on', b.dataset.v === W.deathStyle); b.onclick = () => { W.deathStyle = b.dataset.v; store.set('ps_death', b.dataset.v); $('deathSeg').querySelectorAll('button').forEach(x => x.classList.toggle('on', x === b)); }; });
     $('optVoice').checked = store.get('ps_voice') !== '0'; $('optVoice').onchange = e => { store.set('ps_voice', e.target.checked ? '1' : '0'); if (e.target.checked && !Cmd.speak('Igenis, uram!')) UI.toast('Ezen a készüléken nincs magyar felolvasó hang – a parancs felirat marad.'); };
@@ -140,7 +141,7 @@
   const otherTheme = t => { const o = THEME_IDS.filter(x => x !== t); return o[Math.floor(Math.random() * o.length)]; };
 
   function toMenu() {
-    cleanup(); G.mode = null; $('hud').classList.add('hidden'); show('menu'); W.idleOn = true; SFX.mood('menu'); updateIfPending();
+    cleanup(); G.mode = null; $('hud').classList.add('hidden'); show('menu'); W.idleOn = true; SFX.mood('menu'); keepAwake(false); updateIfPending();
     if (!W.pieces.length) { G.chess = new Chess(); W.setup(G.chess); }
   }
   function cleanup(keepSub) { G.gen++; if (G.unsub && !keepSub) { try { G.unsub(); } catch (e) { /* */ } G.unsub = null; } G.queue = []; G.over = false; G.sel = -1; G.room = null; }
@@ -158,7 +159,7 @@
     $('bDraw').classList.toggle('hidden', opts.mode !== 'online'); $('bUndo').classList.toggle('hidden', opts.mode === 'online');
     $('bFlip').classList.toggle('hidden', opts.mode !== 'local');
     hideAll(); $('hud').classList.remove('hidden'); updateHud();
-    SFX.init(); SFX.bell(); SFX.mood('game');
+    SFX.init(); SFX.bell(); SFX.mood('game'); keepAwake(true); pushBack();
     if (opts.mode === 'bot' && G.mySide === 'b') setTimeout(botMove, 800);
   }
   function startLocal() {
@@ -290,7 +291,7 @@
   }
   async function finish(res) {
     if (G.over) return; G.over = true; updateHud();
-    W.godOn = false; SFX.mood(null); await W.playEnding(res); SFX.mood('menu');
+    W.godOn = false; SFX.mood(null); await W.playEnding(res); SFX.mood('menu'); keepAwake(false);
     if (G.mode === 'online') store.set('ps_session', '');
     let title, sub;
     const reasons = { checkmate: 'A király elesett.', resign: 'A másik megadta magát.', stalemate: 'Patt: a Fekete Halál döntött.', 'draw-insufficient': 'Kevés a bábu a mattolásra.', 'draw-50': 'Ötven lépés, és semmi vér.', 'draw-repetition': 'Háromszor ugyanaz a táncrend.', 'draw-agreed': 'Békét kötöttek.' };
@@ -308,7 +309,7 @@
   function select(sq) {
     G.sel = sq; W.hl.sel = sq;
     W.hl.targets = G.chess.moves().filter(m => m.from === sq).map(m => ({ sq: m.to, cap: !!m.cap })).filter((t, i, a) => a.findIndex(x => x.sq === t.sq) === i);
-    SFX.hop(); updateHud();
+    SFX.hop(); W.buzz(8); updateHud();
   }
   function deselect() { G.sel = -1; W.hl.sel = -1; W.hl.targets = []; updateHud(); }
   function onSquare(sq) {
@@ -407,6 +408,32 @@
       } catch (e) { UI.toast('Hiba', 'bad'); }
     };
   }
+  /* ---------- Natív érzés: ébren tartott képernyő, vissza-gomb, indítóképernyő ---------- */
+  let wake = null, wantWake = false;
+  async function keepAwake(on) {
+    wantWake = on;
+    try { if (on && !wake && navigator.wakeLock) { wake = await navigator.wakeLock.request('screen'); wake.addEventListener('release', () => { wake = null; }); } else if (!on && wake) { await wake.release(); wake = null; } } catch (e) { wake = null; }
+  }
+  document.addEventListener('visibilitychange', () => { if (!document.hidden && wantWake) keepAwake(true); });
+  /* Android vissza-gomb: előbb a nyitott fiókot / krónikát zárja, csata közben rákérdez, a menüben a böngészőé marad */
+  let backArmed = false;
+  function pushBack() { if (backArmed) return; try { history.pushState({ ps: 1 }, ''); backArmed = true; } catch (e) { /* */ } }
+  window.addEventListener('popstate', () => {
+    backArmed = false;
+    if (!G.mode) return;
+    if ($('hud').classList.contains('moreOpen')) { $('hud').classList.remove('moreOpen'); $('bMore').setAttribute('aria-expanded', false); pushBack(); return; }
+    if (!$('log').classList.contains('hidden')) { $('log').classList.add('hidden'); $('bLog').classList.remove('on'); pushBack(); return; }
+    if (G.over || confirm('Elhagyod a csatamezőt?')) toMenu(); else pushBack();
+  });
+  function splashDone() { const sp = $('splash'); if (!sp || sp.classList.contains('gone')) return; $('spBar').style.width = '100%'; sp.classList.add('gone'); setTimeout(() => sp.remove(), 600); }
+  function runSplash() {
+    const jobs = [Figures.loadExtras(), Figures.load([W.themes.w.id, W.themes.b.id, 'black'])]; let done = 0;
+    jobs.forEach(j => j.then(() => { done++; $('spBar').style.width = (30 + done * 35) + '%'; }));
+    $('spBar').style.width = '20%'; const notes = ['A vár kapui nyílnak…', 'A hóhér élezi a bárdját…', 'A bábuk felsorakoznak…'];
+    let n = 0; const iv = setInterval(() => { $('spNote').textContent = notes[++n % notes.length]; }, 900);
+    Promise.race([Promise.all(jobs), new Promise(r => setTimeout(r, 6000))]).then(() => { clearInterval(iv); setTimeout(splashDone, 250); });
+  }
+
   /* ---------- Vezényszó, tanács, hangparancs, krónika ---------- */
   let cmdTimer = null;
   function announce(m) {
@@ -467,7 +494,8 @@
 
   /* ---------- Indulás ---------- */
   window.addEventListener('DOMContentLoaded', () => {
-    W.menuMode = true; W.start($('c')); Figures.loadExtras(); initMenu(); initInput(); initPwa(); SFX.mood('menu');
+    W.menuMode = true; W.start($('c')); runSplash(); initMenu(); initInput(); initPwa(); SFX.mood('menu');
+    document.addEventListener('contextmenu', e => { if (!/INPUT|TEXTAREA/.test(e.target.tagName)) e.preventDefault(); });   // nincs „kép mentése” menü hosszú nyomásra
     document.addEventListener('pointerdown', () => SFX.init(), { once: true });   // a böngésző csak érintés után enged hangot: a menüzene az első koppintásra indul
     G.chess = new Chess(); W.setup(G.chess); W.idleOn = true;
     window.__G = G; // hibakereséshez
