@@ -224,13 +224,38 @@
     W.godOn = !G.over && mine && G.mode !== 'local';
     W.turn = G.over ? null : G.chess.turn;
     const bottom = G.mySide || 'w'; $('mePlate').classList.toggle('active', !G.over && G.chess.turn === bottom); $('oppPlate').classList.toggle('active', !G.over && G.chess.turn !== bottom);
-    if (!G.over) { const th = S.THEMES[G.themeIds[G.chess.turn]]; t.innerHTML = '<span class="sw" style="background:' + th.hex + ';margin-right:8px"></span>' + t.textContent; t.style.borderColor = th.hex === '#3a3560' ? '#d4a437' : th.hex; }
+    if (!G.over) { const th = S.THEMES[G.themeIds[G.chess.turn]]; t.innerHTML = '<span class="sw" style="background:' + th.hex + ';margin-right:8px"></span>' + t.textContent; t.style.borderColor = th.hex; }
     $('oppStat').textContent = ''; $('meStat').textContent = '';
     W.hl.check = G.chess.inCheck() ? G.chess.kingSq(G.chess.turn) : -1;
   }
   function initInput() {
     const c = W.getCanvas();
-    c.addEventListener('pointerdown', e => { SFX.init(); const r = c.getBoundingClientRect(); const sq = W.hitTest(e.clientX - r.left, e.clientY - r.top); if (sq >= 0) onSquare(sq); else if (G.mode) deselect(); });
+    // érintés / egér: koppintás = kijelölés, két ujj = nagyítás, nagyítva egy ujj = mozgatás
+    const ptrs = new Map(); let pinch = null, moved = 0, tapOk = true, lastTap = 0;
+    const pos = e => { const r = c.getBoundingClientRect(); return { x: e.clientX - r.left, y: e.clientY - r.top }; };
+    c.addEventListener('pointerdown', e => {
+      SFX.init(); c.setPointerCapture && c.setPointerCapture(e.pointerId); const p = pos(e); ptrs.set(e.pointerId, p);
+      if (ptrs.size === 1) { moved = 0; tapOk = true; }
+      if (ptrs.size === 2) { const [a, b] = [...ptrs.values()]; pinch = { d: Math.hypot(a.x - b.x, a.y - b.y) || 1 }; tapOk = false; }
+    });
+    c.addEventListener('pointermove', e => {
+      const p = pos(e), prev = ptrs.get(e.pointerId);
+      if (!prev) { if (e.pointerType === 'mouse') W.hover = W.hitTest(p.x, p.y); return; }
+      if (ptrs.size === 2 && pinch) {
+        ptrs.set(e.pointerId, p); const [a, b] = [...ptrs.values()], d = Math.hypot(a.x - b.x, a.y - b.y) || 1;
+        W.zoomAt(d / pinch.d, (a.x + b.x) / 2, (a.y + b.y) / 2); pinch.d = d; return;
+      }
+      const dx = p.x - prev.x, dy = p.y - prev.y; moved += Math.abs(dx) + Math.abs(dy); ptrs.set(e.pointerId, p);
+      if (moved > 14) { tapOk = false; if (W.cam.tz > 1.02) W.panBy(dx, dy); }
+    });
+    const up = e => {
+      const p = ptrs.get(e.pointerId); ptrs.delete(e.pointerId); if (ptrs.size < 2) pinch = null;
+      if (!p || !tapOk || e.type === 'pointercancel') return;
+      const sq = W.hitTest(p.x, p.y); W.hover = sq; if (sq >= 0) onSquare(sq); else if (G.mode) deselect();
+    };
+    c.addEventListener('pointerup', up); c.addEventListener('pointercancel', up);
+    c.addEventListener('wheel', e => { e.preventDefault(); const p = pos(e); W.zoomAt(e.deltaY < 0 ? 1.15 : 1 / 1.15, p.x, p.y); }, { passive: false });
+    $('bZoom').onclick = () => W.cycleZoom();
     $('bFart').onclick = () => emote('fart'); $('bNose').onclick = () => emote('nose');
     $('bFlip').onclick = () => { W.setFlip(!W.flip); };
     $('bMute').onclick = () => { SFX.setMuted(!SFX.isMuted()); $('bMute').classList.toggle('off', SFX.isMuted()); };
@@ -258,7 +283,7 @@
 
   /* ---------- Indulás ---------- */
   window.addEventListener('DOMContentLoaded', () => {
-    W.start($('c')); initMenu(); initInput();
+    W.start($('c')); Figures.loadExtras(); initMenu(); initInput();
     G.chess = new Chess(); W.setup(G.chess); W.idleOn = true;
     window.__G = G; // hibakereséshez
     document.addEventListener('visibilitychange', () => { if (!document.hidden) SFX.init(); });

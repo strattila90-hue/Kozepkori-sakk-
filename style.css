@@ -58,3 +58,5 @@ button.big.alt{background:linear-gradient(#d8cdb0,#b3a37a);font-size:17px}
 #hud{padding-left:28px;padding-right:28px}#hud .bottom{left:28px;right:28px}
 #turnBadge{display:flex;align-items:center;font-size:16px}
 #turnBadge{top:calc(env(safe-area-inset-top) + 58px)!important}
+.btns{gap:5px}.btns button{width:42px;height:42px;outline-offset:-4px}.btns button svg{width:24px;height:24px}.btns button small{display:none}
+@media(min-width:620px){.btns button{width:56px;height:56px}.btns button small{display:block}}

@@ -5,10 +5,10 @@
   const OL = '#1c1310', TAU = Math.PI * 2;
   const C = { mail: '#8aa3bd', mailD: '#2f4660', steel: '#3d424d', steelL: '#cfd5dd', gold: '#d9a935', goldD: '#9c7218', wood: '#8a5a2b', woodD: '#5b3a1a', leather: '#6b3f22', parch: '#efe3c0', blue: '#3b5ea6', red: '#b8322a', green: '#4a7a3a' };
   const THEMES = {
-    white: { id: 'white', name: 'Fehér',  main: '#f3ecd4', dark: '#cbbf94', light: '#fffdf0', accent: '#d4a437', trim: '#3f8a4a', sleeve: '#3f8a4a', hex: '#f3ecd4' },
-    black: { id: 'black', name: 'Fekete', main: '#3a3560', dark: '#25223f', light: '#5e5890', accent: '#d4a437', trim: '#d4a437', sleeve: '#8a3a4a', hex: '#3a3560' },
-    red:   { id: 'red',   name: 'Vörös',  main: '#c23a2c', dark: '#7e1f17', light: '#e66a58', accent: '#efe3b0', trim: '#d4a437', sleeve: '#3f8a4a', hex: '#c23a2c' },
-    gold:  { id: 'gold',  name: 'Arany',  main: '#d8a02c', dark: '#9c6c16', light: '#ffe07a', accent: '#8a2a1c', trim: '#b8322a', sleeve: '#3b5ea6', hex: '#d8a02c' },
+    white: { id: 'white', name: 'Fehér',  main: '#f3ecd4', dark: '#cbbf94', light: '#fffdf0', accent: '#d4a437', trim: '#3f8a4a', sleeve: '#3f8a4a', hex: '#e6f3ff' },
+    black: { id: 'black', name: 'Fekete', main: '#3a3560', dark: '#25223f', light: '#5e5890', accent: '#d4a437', trim: '#d4a437', sleeve: '#8a3a4a', hex: '#7a3af0' },
+    red:   { id: 'red',   name: 'Vörös',  main: '#c23a2c', dark: '#7e1f17', light: '#e66a58', accent: '#efe3b0', trim: '#d4a437', sleeve: '#3f8a4a', hex: '#ff3a2a' },
+    gold:  { id: 'gold',  name: 'Arany',  main: '#d8a02c', dark: '#9c6c16', light: '#ffe07a', accent: '#8a2a1c', trim: '#b8322a', sleeve: '#3b5ea6', hex: '#ffc200' },
   };
   const CHAR = { main: '#2d2a28', dark: '#151413', light: '#4a4543', accent: '#5a5551', trim: '#3a3532', sleeve: '#3a3532' };
   const SKINS = ['#f3dfc3', '#efd2ac', '#e6c29a', '#f6e6cf', '#d9b087'];

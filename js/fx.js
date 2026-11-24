@@ -5,9 +5,10 @@
   const { tw, wait, ease, rnd, pick, clamp } = W;
   const OW_OLD = ['Au!', 'Jaj nekem!', 'Szent Mihály!', 'Az orrom!', 'Irgalom!', 'A lábam!', 'Hóóó!', 'Isten ments!', 'A fogam!'];
   const BATTLE_OLD = ['Hááá!', 'Pusztulj, gazember!', 'Nyam!', 'Megbánod, kutya!', 'Lám, vas!', 'Hajrá!', 'Dicsőség!'];
-  const neckY = e => S.HEIGHT[e.type] * 0.72;
+  const neckY = e => S.HEIGHT[e.type] * 0.8;
   const scrDir = (a, b) => ((b.x - a.x) * (W.flip ? -1 : 1) >= 0 ? 1 : -1);
   W.idleBusy = 0;
+  const animalDraw = (c, a, t) => { if (Figures.extra(a.kind)) Figures.sprite(c, a.kind, Figures.EH[a.kind], a.mv ? Math.abs(Math.sin(t * 10 + (a.seed || 0))) * 0.07 : 0); else S.animal(c, a, t); };
 
   /* ---------- részecske-segédek ---------- */
   function blood(x, y, z, n, dx, dz, pow) {
@@ -27,7 +28,7 @@
   /* ---------- mozgás ---------- */
   function hop(e, tx, tz, dur, height, hops) {
     const sx = e.x, sz = e.z; hops = hops || 1; let last = 0;
-    W.faceTo(e, tx); e.mv = 1; e.busyAnim = true;
+    W.faceTo(e, tx, tz); e.mv = 1; e.busyAnim = true;
     return tw({ p: 0 }, { p: 1 }, dur, ease.lin, (o) => {
       e.x = sx + (tx - sx) * o.p; e.z = sz + (tz - sz) * o.p;
       e.y = Math.sin(((o.p * hops) % 1) * Math.PI) * height;
@@ -77,7 +78,7 @@
     if (kind === 'decap' || kind === 'stab') {
       if (kind === 'decap') {
         v.headless = true; SFX.squish();
-        W.part({ kind: 'head', x: v.x, y: neckY(v), z: v.z, vx: (ux || 0) * rnd(1, 2.5) + rnd(-1, 1), vy: rnd(3.5, 5.5), vz: (uz || 0) * rnd(1, 2.5) + rnd(-1, 1), vr: rnd(-12, 12), g: 12, life: 14, size: 0.2, skin: v.skin });
+        W.part({ kind: 'head', x: v.x, y: neckY(v), z: v.z, vx: (ux || 0) * rnd(1, 2.5) + rnd(-1, 1), vy: rnd(3.5, 5.5), vz: (uz || 0) * rnd(1, 2.5) + rnd(-1, 1), vr: rnd(-12, 12), g: 12, life: 14, size: 0.2, skin: v.skin, fig: (window.Figures && Figures.ready) ? Figures.headInfo(v) : null });
       } else { v.expr = 'pain'; SFX.squish(); }
       fountain(v, kind === 'decap' ? 1.3 : 0.9, kind === 'decap' ? 1 : 0.6);
       SFX.scream();
@@ -113,7 +114,7 @@
   /* ---------- hullaelhurcolás ---------- */
   async function scavenge(b) {
     try {
-      const kind = pick(['peasant', 'peasant', 'dog', 'pig', 'cat']);
+      const kind = pick(['peasant', 'dog', 'pig', 'cat', 'donkey', 'dog']);
       const outX = Math.abs(b.x) >= 4.9 ? Math.sign(b.x) : 0, outZ = Math.abs(b.z) >= 4.9 ? Math.sign(b.z) : 0;
       let actor, crowdMember = null;
       if (kind === 'peasant') {
@@ -123,7 +124,7 @@
         actor = { kind, x: crowdMember.x, z: crowdMember.z, y: 0, face: 1, draw: (c, a, t) => S.crowd(c, cm, t) };
       } else {
         const sx = outZ ? (b.x > 0 ? -1 : 1) * 9.5 : b.x + outX * 0.9, sz = outZ ? b.z + outZ * 0.9 : (b.z > 0 ? -1 : 1) * 9.5;
-        actor = { kind, x: sx, z: sz, y: 0, face: 1, mv: 1, seed: Math.random() * 9, draw: (c, a, t) => S.animal(c, a, t) };
+        actor = { kind, x: sx, z: sz, y: 0, face: 1, mv: 1, seed: Math.random() * 9, draw: animalDraw };
       }
       W.actors.push(actor);
       const tx = b.x + outX * 0.85 + (outZ ? 0.0 : 0), tz = b.z + outZ * 0.85;
@@ -165,7 +166,7 @@
     const dx = v.x - att.x, dz = v.z - att.z, dist = Math.hypot(dx, dz) || 1, ux = dx / dist, uz = dz / dist, isN = att.type === 'N';
     SFX.hop();
     await hop(att, v.x - ux * 0.9, v.z - uz * 0.9, isN ? 0.65 : 0.3 + dist * 0.09, isN ? 1 : 0.3, isN ? 1 : Math.max(1, Math.round(dist / 1.2)));
-    W.faceTo(att, v.x); W.faceTo(v, att.x);
+    W.faceTo(att, v.x, v.z); W.faceTo(v, att.x, att.z); W.focusOn((att.x + v.x) / 2, (att.z + v.z) / 2, 1.3);
     { const t1 = L.pick('engage'), t2 = L.pick('reply'); W.say(att, t1, L.dur(t1) + 0.4); W.setCheer(3.5); SFX.cheer(); await wait(1.3); W.say(v, t2, L.dur(t2), 1.3); await wait(1.3); }
     const rounds = 1 + (Math.random() < 0.6 ? 1 : 0) + (Math.random() < 0.35 ? 1 : 0);
     for (let i = 0; i < rounds; i++) {
@@ -176,6 +177,7 @@
     const kind = pick(['decap', 'decap', 'stab', 'launch', 'gibs', 'topple']);
     const dirS = scrDir(att, v);
     await die(v, kind, dirS, ux, uz);
+    W.unfocus();
     // az áldozat kikerül a játékból, a támadó beáll a helyére
     W.pieces.splice(W.pieces.indexOf(v), 1);
     if (kind !== 'gibs') {
@@ -198,8 +200,8 @@
   async function scavengePile(pile) {
     // egy kutya vagy malac eszi meg a maradékot
     try {
-      const kind = pick(['dog', 'pig', 'cat']), sx = pile.x > 0 ? -9.5 : 9.5;
-      const a = { kind, x: sx, z: pile.z + 0.9, y: 0, face: 1, mv: 1, seed: Math.random() * 9, draw: (c, ac, t) => S.animal(c, ac, t) }; W.actors.push(a);
+      const kind = pick(['dog', 'pig', 'cat', 'donkey']), sx = pile.x > 0 ? -9.5 : 9.5;
+      const a = { kind, x: sx, z: pile.z + 0.9, y: 0, face: 1, mv: 1, seed: Math.random() * 9, draw: animalDraw }; W.actors.push(a);
       const x0 = a.x; a.face = ((pile.x - 0.9 - x0) * (W.flip ? -1 : 1)) >= 0 ? 1 : -1;
       await tw(a, { x: pile.x + (sx > 0 ? 0.8 : -0.8), z: pile.z + 0.4 }, 1.6, ease.lin); a.mv = 0; a.eat = true;
       for (let i = 0; i < 3; i++) { SFX.nom(); await wait(0.5); }
@@ -304,24 +306,41 @@
     e.busyAnim = false;
   }
   async function dragonFate(loser) {
-    const dir = W.flip ? -1 : 1, ps = W.pieces.filter(e => e.color === loser);
-    const zr = ps.reduce((s, e) => s + e.z, 0) / (ps.length || 1);
-    const d = W.dragonFx = { x: -13 * dir, y: 3.6, z: zr, face: 1, breath: false };
-    SFX.roar(); toast('Jön a sárkány!', 'bad');
-    await tw(d, { x: -5 * dir, y: 3 }, 1.6, ease.lin);
-    d.breath = true; SFX.fire(); SFX.roar();
-    const done = [];
-    W.every(3.6, 0.02, () => {
-      const mx = d.x + dir * 1.7;
-      W.part({ kind: 'fire', x: mx, y: d.y + 0.2, z: d.z + rnd(-0.4, 0.4), vx: dir * rnd(1.5, 3.5), vy: rnd(-3.5, -1.5), vz: rnd(-0.6, 0.6), g: 0, size: rnd(0.2, 0.4), color: pick(['#ff5a1f', '#ffb52e', '#ffe34a']), life: 0.7 });
-      for (const e of ps) if (!done.includes(e) && Math.abs(mx + dir * 0.7 - e.x) < 1.1) { done.push(e); burnDie(e); }
-    });
-    await tw(d, { x: 6 * dir }, 3.6, ease.lin);
-    d.breath = false;
-    await tw(d, { x: 16 * dir, y: 5 }, 1.6, ease.lin);
+    const ps = W.pieces.filter(e => e.color === loser).sort((a, b) => a.x - b.x), zr = ps.reduce((q, e) => q + e.z, 0) / (ps.length || 1);
+    const out = zr < 0 ? -1 : 1, cs = W.flip ? -1 : 1, toCam = dz => dz * cs > 0, mode = W.debugDragon || pick(['burn', 'eat']);
+    const d = W.dragonFx = { x: 0, y: 7.5, z: out * 15, pose: toCam(-out) ? 'front' : 'back', h: 3.6, breath: false };
+    SFX.roar(); toast('Jön a sárkány!', 'bad'); W.setCheer(4);
+    await tw(d, { x: 0, y: 2.6, z: zr + out * 2.1 }, 1.7, ease.eout);
+    const faceCam = toCam(-out); d.pose = faceCam ? 'front' : 'back';
+    const mouthFire = (dur, sweep) => {
+      d.pose = faceCam ? 'fire' : 'back';
+      W.every(dur, 0.018, () => {
+        const mx = d.x, my = d.y + d.h * 0.5;
+        W.part({ kind: 'fire', x: mx + rnd(-0.2, 0.2), y: my, z: d.z - out * 0.2, vx: rnd(-0.5, 0.5), vy: rnd(-2.4, -0.8), vz: -out * rnd(2.2, 3.8), g: 0, size: rnd(0.25, 0.5), color: pick(['#ff5a1f', '#ffb52e', '#ffe34a']), life: 0.7 });
+      });
+    };
+    if (mode === 'burn') {
+      SFX.fire(); SFX.roar(); const done = [];
+      d.x = -4.8; mouthFire(4.6);
+      W.every(4.6, 0.03, () => { for (const e of ps) if (!done.includes(e) && Math.abs(d.x - e.x) < 1.2) { done.push(e); burnDie(e); } });
+      await tw(d, { x: 4.8 }, 4.6, ease.lin);
+      for (const e of ps) if (!done.includes(e)) { done.push(e); burnDie(e); }
+    } else {
+      for (const e of ps) {
+        await tw(d, { x: e.x, z: e.z + out * 1.7, y: 1.1 }, 0.55, ease.eio);
+        d.pose = faceCam ? 'fire' : 'back'; SFX.roar(); await wait(0.18);
+        SFX.squish(); SFX.nom(); setTimeout(() => SFX.nom(), 160); blood(e.x, 0.9, e.z, 26, 0, 0, 1.6); for (let i = 0; i < 3; i++) W.decal(e.x + rnd(-0.5, 0.5), e.z + rnd(-0.5, 0.5), rnd(0.2, 0.45));
+        W.part({ kind: 'text', text: pick(['NYAM!', 'ROPP!', 'CSATT!', 'Ropogós!']), x: e.x, y: 2.3, z: e.z, vy: 1.6, g: 0, life: 1.1, size: 0.34, color: '#ffd24a' }); W.shake = 0.5;
+        e.busyAnim = true; e.state = 'dead'; await Promise.all([tw(e, { sy: 0.05, sx: 0.4, alpha: 0 }, 0.3), wait(0.2)]);
+        const i = W.pieces.indexOf(e); if (i >= 0) W.pieces.splice(i, 1);
+        d.pose = faceCam ? 'front' : 'back'; await wait(0.15);
+      }
+      SFX.burp(); W.part({ kind: 'text', text: 'BÖÖÖFF!', x: d.x, y: 4.2, z: d.z, vy: 1.2, g: 0, life: 1.6, size: 0.45, color: '#c8ff7a' }); await wait(1.2);
+    }
+    d.pose = toCam(out) ? 'front' : 'back'; SFX.roar();
+    await tw(d, { x: 0, y: 8, z: out * 16 }, 1.8, ease.ein);
     W.dragonFx = null;
-    for (const e of ps) if (!done.includes(e)) await burnDie(e);
-    while (ps.some(e => e.busyAnim)) await wait(0.2);
+    while (W.pieces.some(e => e.color === loser && e.busyAnim)) await wait(0.2);
   }
   async function axeFate(loser) {
     const dir = W.flip ? -1 : 1, k = W.king(loser);
