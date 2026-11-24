@@ -168,3 +168,4 @@ input[type=checkbox]{width:20px;height:20px;accent-color:#8a1c14;flex:0 0 auto}
 #hud .bar .btns.more{display:none;grid-template-columns:repeat(5,1fr)}#hud.moreOpen .bar .btns.more{display:grid}
 #hud .bar .btns.more button{max-width:none}
 .join select{flex:0 0 47%;font-size:17px!important;padding:9px 6px}
+#todSeg button{font-size:14.5px;padding:8px 4px}

@@ -158,6 +158,16 @@ let pass = 0, fail = 0; const ok = (n, c, info) => { c ? pass++ : fail++; consol
     await P.click('#bMore'); ok('„Több” fiók kinyílik', await P.evaluate(() => document.getElementById('hud').classList.contains('moreOpen') && getComputedStyle(document.getElementById('moreBtns')).display !== 'none'));
     await c7.close();
   }
+  console.log('Napszakok, tükröződés (v1.2)');
+  {
+    const c8 = await b.newContext({ viewport: { width: 430, height: 900 } }); const P = await mk(c8);
+    await P.click('#btnLocal'); await P.waitForTimeout(600);
+    const lum = async t => P.evaluate(t => { W.idleOn = false; W.autoQ = false; W.setQ(2); W.setTod(t); W._renderOnce(); const c = W.getCanvas(), g = c.getContext('2d'), d = g.getImageData(0, 0, c.width, c.height).data; let s = 0; for (let i = 0; i < d.length; i += 400) s += d[i] + d[i + 1] + d[i + 2]; return s / (d.length / 400); }, t);
+    const day = await lum('day'), dusk = await lum('dusk'), night = await lum('night');
+    ok('napszakok: éjjel sötétebb, mint alkonyatkor, alkonyatkor sötétebb, mint nappal', night < dusk && dusk < day, { day, dusk, night });
+    await P.evaluate(() => W.setTod('auto'));
+    await c8.close();
+  }
   ok('nincs oldal-hiba a teszt során', errs.length === 0, errs.slice(0, 3));
   await b.close(); srv.close(); console.log(`\nFüsttesztek: ${pass} sikeres, ${fail} hibás`); process.exit(fail ? 1 : 0);
 })();

@@ -79,6 +79,9 @@
     const hd = hrect(vw.v, e.type), x0 = hd[0], y0 = hd[1], x1 = hd[2], y1 = hd[3];
     const hx = -w / 2 + x0 * w, hy = -h + y0 * h, hw = (x1 - x0) * w, hh = (y1 - y0) * h;
     // test: a nyak körüli lyuk kimarad a testből, a fej külön forog. Járás közben a lábrész két félre vágva, felváltva lép.
+    if (root.W.q >= 2 && e.state !== 'dead' && !(e.alpha < 1) && burn < 0.04) {   // kontúrfény: meleg fényszegély a festett alak körül (kiemeli a háttérből)
+      ctx.save(); ctx.globalAlpha = root.W.tod === 'night' ? 0.35 : 0.5; ctx.scale(1.05, 1.03); ctx.drawImage(silhouette(im, k, root.W.tod === 'night' ? '#ffc070' : '#fff2c8'), -w / 2, -h, w, h); ctx.restore();
+    }
     const walking = e.mv > 0 && e.state !== 'dead' && burn < 0.04 && !(e.hurt > 0.05) && !!LEG[e.type], lf = LEG[e.type] || 0.2;
     ctx.save(); ctx.beginPath(); ctx.rect(-w, -h * 1.4, w * 2, walking ? h * (1.4 - lf) + 0.01 : h * 1.8); ctx.rect(hx, hy, hw, hh); ctx.clip('evenodd'); ctx.drawImage(im, -w / 2, -h, w, h); ctx.restore();
     if (walking) {

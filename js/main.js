@@ -32,7 +32,7 @@
       for (let r = 0; r < n; r++) for (let c = 0; c < n; c++) if (qr.isDark(r, c)) g.fillRect(off + c * px, off + r * px, px, px);
     } catch (e) { console.warn('QR', e); }
   }
-  const APP_V = '1.1.0'; let deferredInstall = null, swReg = null, newWorker = null;
+  const APP_V = '1.2.0'; let deferredInstall = null, swReg = null, newWorker = null;
   const isStandalone = () => window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone;
   function showUpdateBanner(txt) {
     if ($('updBanner')) return; const d = document.createElement('div'); d.id = 'updBanner'; d.innerHTML = '<span></span><button>Betöltöm!</button>'; d.firstChild.textContent = txt; d.lastChild.onclick = applyUpdate; document.body.appendChild(d);
@@ -112,6 +112,7 @@
     $('btnBot').onclick = () => startBot(+$('botLevel').value); $('btnLocal').onclick = startLocal;
     $('perfSeg').querySelectorAll('button').forEach(b => { b.classList.toggle('on', b.dataset.v === W.perfMode); b.onclick = () => { W.setPerf(b.dataset.v); $('perfSeg').querySelectorAll('button').forEach(x => x.classList.toggle('on', x === b)); }; });
     $('optFast').onchange = e => { W.speed = e.target.checked ? 1.7 : 1; };
+    $('todSeg').querySelectorAll('button').forEach(b => { b.classList.toggle('on', b.dataset.v === W.todMode); b.onclick = () => { W.setTod(b.dataset.v); $('todSeg').querySelectorAll('button').forEach(x => x.classList.toggle('on', x === b)); }; });
     W.deathStyle = store.get('ps_death') || 'mixed';
     $('deathSeg').querySelectorAll('button').forEach(b => { b.classList.toggle('on', b.dataset.v === W.deathStyle); b.onclick = () => { W.deathStyle = b.dataset.v; store.set('ps_death', b.dataset.v); $('deathSeg').querySelectorAll('button').forEach(x => x.classList.toggle('on', x === b)); }; });
     $('optVoice').checked = store.get('ps_voice') !== '0'; $('optVoice').onchange = e => { store.set('ps_voice', e.target.checked ? '1' : '0'); if (e.target.checked && !Cmd.speak('Igenis, uram!')) UI.toast('Ezen a készüléken nincs magyar felolvasó hang – a parancs felirat marad.'); };
