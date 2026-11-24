@@ -22,6 +22,29 @@ Fehér · Fekete · Vörös · Arany (mindenki a sajátját választja; azonos v
 - A győztes királyát megkoronázzák; a vesztes seregét **sárkány** elégeti, **hóhér** lefejezi, vagy egymást **nyakon szúrják**.
 - Döntetlennél a **Fekete Halál** visz el mindenkit.
 
+## v1.0.0 – első éles kiadás
+A v0.9.7–v0.10.0 összes újítása élesítve: olvasható buborékok és szobakód, középkori zene, élethűbb hóhér és disznóvágás, diófa tábla, szúró kezek, lépő lábak, élőbb tömeg, csapkodó szárnyú sárkány.
+
+## v0.10.0
+- **Szúró kezek:** támadáskor a bábu karja hátralendül, majd előredöf (gyalog/futó: tőr, király/királynő/lovag: kard, bástya: lándzsa); a találat után véres a penge.
+- **Lépő lábak:** a gyalog és a bástya lábai felváltva lépnek, a lovas lova lépked; ugrálás helyett lépegetés (a ló ugrik). A palástosok ringatózva vonulnak.
+- **Élőbb tömeg:** mindenki a saját ütemében mocorog és ugrál ujjongáskor, a hátsó sorok párásak, a tömeg árnyékot vet.
+- **Sárkány:** csapkodó szárnyak és szárnysuhogás, izzó szemek, porfelhős landolás, szikrázó tűz, perzselt nyom a táblán.
+
+## v0.9.9
+- **Szebb tábla:** a rikító sárga–fekete helyett tölgy- és diófa intarzia faerezettel, faragott diófa keret arany szegecsekkel.
+- **Nyugodtabb bábujelölés:** a vastag kettős gyűrűk helyett áttetsző, seregszínű talpkorong; a léphető bábuk alatt lágyan pulzáló arany fény; aranyszínű kijelölés, finomabb célpontok.
+
+## v0.9.8
+- **Olvasható szobakód:** a váróteremben a kód betűnként, külön kockában, jól olvasható betűvel jelenik meg (a gót betű olvashatatlan volt); a kódbeíró mező is ilyen betűt használ. A felugró értesítések is olvashatóbb betűt kaptak, és a „Vár nyitása…” felirat már nem csúszik rá a kódra.
+
+## v0.9.7 újdonságai
+- **Szövegbuborékok nem takarják a táblát:** kisebbek, legfeljebb 2 sorosak, a bábuk fölött, egymást nem fedik, egyszerre legfeljebb 3 látszik, és lépésválasztás közben a háttér-fecsegés elhalványul. Menüben és a játékban (**Szó** gomb) állítható: *Sok* / *Kevés* (csak harc, sakk, végjáték – alapérték) / *Csend*.
+- **Középkori zene:** saját, dór/eol hangnemű dallamok furulyaszerű hangon, tekerőlant-szerű bordóval, lant-pengetéssel és dobbal (WebAudio, nincs hangfájl). Menüzene és csatazene; a **Lant** gomb vagy a menü kapcsolója némítja.
+- **Élethűbb hóhér:** csuklyás, izmos, bőrkötényes hóhér kétkezes szakállas bárddal; tuskó, térdelő király, dobpergés, lassú emelés, lesújtás, a fej a kosárba repül.
+- **Élethűbb disznóvágás:** lefogás a dikón, nyakszúrás, a vért tálban fogják fel (hurkának), szalmás perzselés, kaparás, felhasított fél disznó a gerendán.
+- **Szebb kép és mozgás:** fáklyafény-tócsák, porszemek a fényben, lakkfény a táblán; lágyabb, rugalmas ugrálás (lapul–nyúlik), simított képkocka-idő.
+
 ## Telepítés (GitHub Pages)
 Statikus oldal, build nincs. A repo beállításai → Pages → `main` (vagy a kívánt ág) / root.
 Helyben: `python3 -m http.server` majd `http://localhost:8000`.
@@ -42,7 +65,8 @@ Helyben: `python3 -m http.server` majd `http://localhost:8000`.
 | `js/sprites.js` | a karakterek procedurális rajza |
 | `js/world.js` | kamera, háttér, részecskék, tömeg, rajzolás |
 | `js/fx.js` | harc-, halál-, hullaelhurcolás-, idle- és végjáték-animációk |
-| `js/audio.js` | procedurális hangok (puki, orrfújás, szúrás, sárkány…) |
+| `js/audio.js` | procedurális hangok (puki, orrfújás, szúrás, sárkány…) és a középkori zene |
+| `js/scenes.js` | háttérjelenetek: disznóvágás, kínzás |
 | `js/net.js` | Firestore szobák |
 | `js/main.js` | menü, játékmódok, bemenet |
 

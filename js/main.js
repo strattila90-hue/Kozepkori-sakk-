@@ -32,7 +32,7 @@
       for (let r = 0; r < n; r++) for (let c = 0; c < n; c++) if (qr.isDark(r, c)) g.fillRect(off + c * px, off + r * px, px, px);
     } catch (e) { console.warn('QR', e); }
   }
-  const APP_V = '0.9.6'; let deferredInstall = null, swReg = null, newWorker = null;
+  const APP_V = '1.0.0'; let deferredInstall = null, swReg = null, newWorker = null;
   const isStandalone = () => window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone;
   function showUpdateBanner(txt) {
     if ($('updBanner')) return; const d = document.createElement('div'); d.id = 'updBanner'; d.innerHTML = '<span></span><button>Betöltöm!</button>'; d.firstChild.textContent = txt; d.lastChild.onclick = applyUpdate; document.body.appendChild(d);
@@ -85,6 +85,9 @@
     $('btnBot').onclick = () => startBot(+$('botLevel').value); $('btnLocal').onclick = startLocal;
     $('perfSeg').querySelectorAll('button').forEach(b => { b.classList.toggle('on', b.dataset.v === W.perfMode); b.onclick = () => { W.setPerf(b.dataset.v); $('perfSeg').querySelectorAll('button').forEach(x => x.classList.toggle('on', x === b)); }; });
     $('optFast').onchange = e => { W.speed = e.target.checked ? 1.7 : 1; };
+    $('optMusic').checked = SFX.musicOn(); $('optMusic').onchange = e => { SFX.init(); SFX.setMusic(e.target.checked); paintMusic(); };
+    $('talkSeg').querySelectorAll('button').forEach(b => { b.onclick = () => { W.setTalk(b.dataset.v); paintTalk(); }; });
+    paintTalk(); paintMusic();
     $('btnCopy').onclick = async () => { try { await navigator.clipboard.writeText(G.code); UI.toast('Jel lemásolva!'); } catch (e) { UI.toast(G.code); } };
     $('btnShare').onclick = async () => {
       const url = roomUrl(G.code);
@@ -95,13 +98,18 @@
     $('btnLobbyCancel').onclick = toMenu; $('btnToMenu').onclick = toMenu; $('bMenu').onclick = () => { if (G.over || confirm('Elhagyod a csatamezőt?')) toMenu(); };
     $('btnAgain').onclick = () => { if (G.mode === 'bot') startBot(G.level); else if (G.mode === 'local') startLocal(); else toMenu(); };
   }
+  const TALK_NAME = { many: 'sok', few: 'kevés', off: 'csend' };
+  function paintTalk() { $('talkSeg').querySelectorAll('button').forEach(x => x.classList.toggle('on', x.dataset.v === W.talk)); $('bTalk').querySelector('small').textContent = 'Szó: ' + TALK_NAME[W.talk]; $('bTalk').classList.toggle('off', W.talk === 'off'); }
+  function paintMusic() { $('bMusic').classList.toggle('off', !SFX.musicOn()); $('optMusic').checked = SFX.musicOn(); }
+  /* szobakód: betűnként külön, jól olvasható kockában (a gót betű olvashatatlan volt) */
+  function showCode(code) { const el = $('lobbyCode'); el.textContent = ''; for (const ch of String(code)) { const s = document.createElement('span'); s.textContent = ch; el.appendChild(s); } el.setAttribute('aria-label', 'Szobakód: ' + String(code).split('').join(' ')); }
   function paintSw() { $('swatches').querySelectorAll('button').forEach(b => b.classList.toggle('on', b.dataset.id === myTheme)); }
   const FUNNY = ['Pocak Pista', 'Büdös Bence', 'Sáros Sanyi', 'Kövér Kata', 'Orrfúró Ödön', 'Mókus Jóska', 'Pukizó Pál', 'Rühes Rozi', 'Csorba Gyuri', 'Kecskepásztor Kelemen'];
   const myName = () => { let n = Proto.cleanName($('name').value, ''); if (!n) { n = FUNNY[Math.floor(Math.random() * FUNNY.length)]; $('name').value = n; } store.set('ps_name', n); return n; };
   const otherTheme = t => { const o = THEME_IDS.filter(x => x !== t); return o[Math.floor(Math.random() * o.length)]; };
 
   function toMenu() {
-    cleanup(); G.mode = null; $('hud').classList.add('hidden'); show('menu'); W.idleOn = true;
+    cleanup(); G.mode = null; $('hud').classList.add('hidden'); show('menu'); W.idleOn = true; SFX.mood('menu');
     if (!W.pieces.length) { G.chess = new Chess(); W.setup(G.chess); }
   }
   function cleanup(keepSub) { G.gen++; if (G.unsub && !keepSub) { try { G.unsub(); } catch (e) { /* */ } G.unsub = null; } G.queue = []; G.over = false; G.sel = -1; G.room = null; }
@@ -119,7 +127,7 @@
     $('bDraw').classList.toggle('hidden', opts.mode !== 'online'); $('bUndo').classList.toggle('hidden', opts.mode === 'online');
     $('bFlip').classList.toggle('hidden', opts.mode !== 'local');
     hideAll(); $('hud').classList.remove('hidden'); updateHud();
-    SFX.init(); SFX.bell();
+    SFX.init(); SFX.bell(); SFX.mood('game');
     if (opts.mode === 'bot' && G.mySide === 'b') setTimeout(botMove, 800);
   }
   function startLocal() {
@@ -141,7 +149,7 @@
       UI.toast('Vár nyitása…');
       const code = await Net.createRoom({ name: myName(), theme: myTheme, side });
       G.code = code; G.role = 'host'; store.set('ps_session', JSON.stringify({ code }));
-      $('lobbyCode').textContent = code; drawQR(code); show('lobby'); watchRoom(code);
+      showCode(code); drawQR(code); show('lobby'); $('toast').className = ''; watchRoom(code);
     } catch (e) { UI.toast(e.message || 'Hiba', 'bad'); console.error(e); }
   }
   async function joinOnline(code) {
@@ -150,7 +158,7 @@
     try {
       const r = await Net.joinRoom(code, { name: myName(), theme: myTheme });
       G.code = code; G.role = r.role; store.set('ps_session', JSON.stringify({ code }));
-      if (r.role === 'host' && !r.data.guestId) { $('lobbyCode').textContent = code; drawQR(code); show('lobby'); }
+      if (r.role === 'host' && !r.data.guestId) { showCode(code); drawQR(code); show('lobby'); $('toast').className = ''; }
       watchRoom(code);
     } catch (e) { UI.toast(e.message || 'Hiba', 'bad'); console.error(e); }
   }
@@ -250,7 +258,7 @@
   }
   async function finish(res) {
     if (G.over) return; G.over = true; updateHud();
-    W.godOn = false; await W.playEnding(res);
+    W.godOn = false; SFX.mood(null); await W.playEnding(res); SFX.mood('menu');
     if (G.mode === 'online') store.set('ps_session', '');
     let title, sub;
     const reasons = { checkmate: 'A király elesett.', resign: 'A másik megadta magát.', stalemate: 'Patt: a Fekete Halál döntött.', 'draw-insufficient': 'Kevés a bábu a mattolásra.', 'draw-50': 'Ötven lépés, és semmi vér.', 'draw-repetition': 'Háromszor ugyanaz a táncrend.', 'draw-agreed': 'Békét kötöttek.' };
@@ -312,7 +320,7 @@
     if (G.over) hint = ''; else if (G.mode === 'online' && !(G.room && G.room.guestId)) hint = 'Várunk az ellenfélre…';
     else if (!(G.mode === 'local' || mine)) hint = 'Az ellenfél lép – nézd a nyilat!';
     else if (G.sel >= 0) hint = 'Koppints a zöld pontra (lépés) vagy a piros célkeresztre (ütés). Máshová koppintva visszavonod.';
-    else hint = 'Koppints egy saját bábura (arany gyűrűvel jelölt).';
+    else hint = 'Koppints egy saját bábura (arany fény jelöli).';
     hel.textContent = hint;
   }
   W.selectable = sq => { try { if (!canAct()) return false; const pc = G.chess.board[sq]; if (!pc || Chess.colorOf(pc) !== G.chess.turn) return false; if (G.mySide && Chess.colorOf(pc) !== G.mySide) return false; return G.chess.moves().some(m => m.from === sq); } catch (e) { return false; } };
@@ -347,6 +355,8 @@
     $('bFart').onclick = () => emote('fart'); $('bNose').onclick = () => emote('nose');
     $('bUndo').onclick = takeback; $('bFlip').onclick = () => { W.setFlip(!W.flip); };
     $('bMute').onclick = () => { SFX.setMuted(!SFX.isMuted()); $('bMute').classList.toggle('off', SFX.isMuted()); };
+    $('bMusic').onclick = () => { SFX.init(); SFX.setMusic(!SFX.musicOn()); paintMusic(); UI.toast(SFX.musicOn() ? 'Szól a lant!' : 'A lantos pihen.'); };
+    $('bTalk').onclick = () => { const order = ['few', 'many', 'off'], n = order[(order.indexOf(W.talk) + 1) % 3]; W.setTalk(n); paintTalk(); UI.toast({ many: 'Fecsegő udvar', few: 'Csak a csatában szólnak', off: 'Néma udvar' }[n]); };
     $('bResign').onclick = async () => {
       if (G.over || !G.mode || !confirm('Biztosan megadod magad?')) return;
       const loser = G.mode === 'local' ? G.chess.turn : G.mySide;
@@ -379,7 +389,8 @@
 
   /* ---------- Indulás ---------- */
   window.addEventListener('DOMContentLoaded', () => {
-    W.menuMode = true; W.start($('c')); Figures.loadExtras(); initMenu(); initInput(); initPwa();
+    W.menuMode = true; W.start($('c')); Figures.loadExtras(); initMenu(); initInput(); initPwa(); SFX.mood('menu');
+    document.addEventListener('pointerdown', () => SFX.init(), { once: true });   // a böngésző csak érintés után enged hangot: a menüzene az első koppintásra indul
     G.chess = new Chess(); W.setup(G.chess); W.idleOn = true;
     window.__G = G; // hibakereséshez
     document.addEventListener('visibilitychange', () => { if (!document.hidden) SFX.init(); });

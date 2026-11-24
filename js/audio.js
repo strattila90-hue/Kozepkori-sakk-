@@ -1,7 +1,9 @@
 /* Procedurális hangeffektek WebAudio-val: puki, orrfújás, szúrás, sikoly, sárkány, fanfár... */
 (function (root) {
   'use strict';
-  let ctx = null, master = null, noiseBuf = null, muted = false;
+  let ctx = null, master = null, noiseBuf = null, muted = false, musicBus = null;
+  const MUSIC_VOL = 0.42; let musicOn = true, mood = null;
+  try { musicOn = localStorage.getItem('ps_music') !== '0'; } catch (e) { /* privát mód */ }
 
   function init() {
     if (ctx) { if (ctx.state === 'suspended') ctx.resume(); return; }
@@ -14,6 +16,9 @@
     noiseBuf = ctx.createBuffer(1, ctx.sampleRate * 2, ctx.sampleRate);
     const d = noiseBuf.getChannelData(0);
     for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
+    musicBus = ctx.createGain(); musicBus.gain.value = musicOn ? MUSIC_VOL : 0; musicBus.connect(comp);
+    if (mood) startMood(mood);
+    document.addEventListener('visibilitychange', () => { if (!ctx) return; if (document.hidden) ctx.suspend(); else ctx.resume(); });
   }
   const ok = () => ctx && !muted;
   const now = () => ctx.currentTime;
@@ -42,9 +47,73 @@
     return f;
   }
 
+  /* ---------- Középkori zene (saját szerzemények, dór/eol hangnemben) ----------
+     Bordó (tekerőlant/duda): kvint-orgonapont; dallam: furulya-szerű hang vibrátóval; lant: pengetett kvint-arpeggio; dob (tábor).
+     Ütemező: 25 ms-onként előre beütemez ~0,2 mp-et (pontos időzítés akkor is, ha a rajzolás akad). */
+  const mtof = m => 440 * Math.pow(2, (m - 69) / 12);
+  const TUNES = {
+    game: { bpm: 126, beats: 3, drum: true, mel: [
+      [74, 1], [72, 0.5], [71, 0.5], [69, 1], [67, 1], [69, 1], [65, 1], [64, 0.5], [65, 0.5], [67, 1], [69, 1], [62, 3],
+      [69, 1], [72, 1], [74, 1], [76, 1], [74, 0.5], [72, 0.5], [69, 1], [67, 1], [65, 0.5], [64, 0.5], [65, 1], [62, 3],
+      [77, 1], [76, 0.5], [74, 0.5], [72, 1], [74, 1], [69, 2], [72, 1], [71, 0.5], [69, 0.5], [67, 1], [69, 3],
+      [74, 0.5], [76, 0.5], [77, 1], [76, 1], [74, 1], [72, 1], [69, 1], [67, 0.5], [69, 0.5], [65, 1], [64, 1], [62, 3]],
+      ch: [50, 48, 48, 50, 53, 48, 48, 50, 53, 50, 48, 45, 50, 53, 48, 50] },
+    menu: { bpm: 84, beats: 4, drum: false, mel: [
+      [69, 2], [67, 1], [65, 1], [64, 1], [65, 1], [62, 2], [65, 1], [67, 1], [69, 1.5], [67, 0.5], [69, 4],
+      [72, 2], [69, 1], [67, 1], [65, 1], [64, 1], [62, 2], [64, 1], [65, 0.5], [64, 0.5], [60, 1], [64, 1], [62, 4]],
+      ch: [50, 50, 53, 45, 53, 50, 48, 50] },
+  };
+  let seq = null, timer = null, drone = null;
+  function lead(m, t, d) {
+    const f = mtof(m), o1 = ctx.createOscillator(), o2 = ctx.createOscillator(), g2 = ctx.createGain(), lp = ctx.createBiquadFilter(), g = ctx.createGain(), lfo = ctx.createOscillator(), lg = ctx.createGain();
+    o1.type = 'triangle'; o2.type = 'square'; o1.frequency.value = f; o2.frequency.value = f; g2.gain.value = 0.18; lp.type = 'lowpass'; lp.frequency.value = 2400;
+    lfo.frequency.value = 5.3; lg.gain.setValueAtTime(0, t); lg.gain.linearRampToValueAtTime(f * 0.007, t + Math.min(0.35, d * 0.6)); lfo.connect(lg); lg.connect(o1.frequency); lg.connect(o2.frequency);
+    const v = 0.11, end = t + d * 0.94; g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(v, t + 0.035); g.gain.setValueAtTime(v * 0.85, Math.max(t + 0.04, end - 0.07)); g.gain.exponentialRampToValueAtTime(0.0001, end);
+    o1.connect(lp); o2.connect(g2); g2.connect(lp); lp.connect(g); g.connect(musicBus);
+    for (const o of [o1, o2, lfo]) { o.start(t); o.stop(end + 0.05); }
+    noise(t, 0.05, 0.012, 'bandpass', f * 2, 3, musicBus);   // fúvás-zaj
+  }
+  function pluck(m, t, v) {
+    const f = mtof(m), o = ctx.createOscillator(), o2 = ctx.createOscillator(), lp = ctx.createBiquadFilter(), g = ctx.createGain();
+    o.type = 'sawtooth'; o.frequency.value = f; o2.type = 'triangle'; o2.frequency.value = f * 2.005; lp.type = 'lowpass'; lp.Q.value = 2;
+    lp.frequency.setValueAtTime(3600, t); lp.frequency.exponentialRampToValueAtTime(380, t + 0.28);
+    g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(v || 0.06, t + 0.004); g.gain.exponentialRampToValueAtTime(0.0001, t + 0.9);
+    o.connect(lp); o2.connect(lp); lp.connect(g); g.connect(musicBus); o.start(t); o2.start(t); o.stop(t + 0.95); o2.stop(t + 0.95);
+  }
+  function tabor(t, acc) {
+    osc('sine', 115, 52, t, 0.2, 0.22 * acc, musicBus); noise(t, 0.05, 0.06 * acc, 'lowpass', 1100, 1, musicBus);
+    if (acc < 1) noise(t, 0.04, 0.025, 'highpass', 6500, 1, musicBus);       // csörgő
+  }
+  function startDrone(root) {
+    stopDrone(); const t = ctx.currentTime, g = ctx.createGain(), lp = ctx.createBiquadFilter(), lfo = ctx.createOscillator(), lg = ctx.createGain(), os = [];
+    lp.type = 'lowpass'; lp.frequency.value = 520; lp.Q.value = 1.5; lfo.frequency.value = 0.17; lg.gain.value = 160; lfo.connect(lg); lg.connect(lp.frequency);
+    for (const [m, det] of [[root - 12, -4], [root - 5, 3], [root - 12, 5]]) { const o = ctx.createOscillator(); o.type = 'sawtooth'; o.frequency.value = mtof(m); o.detune.value = det; o.connect(lp); o.start(t); os.push(o); }
+    g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(0.035, t + 2.5); lp.connect(g); g.connect(musicBus); lfo.start(t); os.push(lfo);
+    drone = { g, os };
+  }
+  function stopDrone() { if (!drone) return; const t = ctx.currentTime, d = drone; d.g.gain.cancelScheduledValues(t); d.g.gain.setTargetAtTime(0.0001, t, 0.5); for (const o of d.os) o.stop(t + 2.5); drone = null; }
+  function startMood(m) {
+    if (timer) { clearInterval(timer); timer = null; } stopDrone(); seq = null;
+    const tune = TUNES[m]; if (!tune) return;
+    startDrone(50);
+    seq = { tune, beat: 60 / tune.bpm, t: ctx.currentTime + 0.3, i: 0, bt: ctx.currentTime + 0.3, b: 0 };
+    timer = setInterval(schedule, 25);
+  }
+  function schedule() {
+    if (!seq || !ctx) return; const ahead = ctx.currentTime + 0.2, T = seq.tune, B = seq.beat;
+    if (seq.t < ctx.currentTime - 1) { seq.t = seq.bt = ctx.currentTime + 0.05; }        // a lap a háttérben volt: újraszinkron
+    while (seq.t < ahead) { const [m, d] = T.mel[seq.i % T.mel.length]; if (m) lead(m, seq.t, d * B); seq.t += d * B; seq.i++; }
+    while (seq.bt < ahead) {
+      const bar = Math.floor(seq.b / T.beats), inBar = seq.b % T.beats, root = T.ch[bar % T.ch.length], arp = [root, root + 7, root + 12, root + 7];
+      pluck(arp[(inBar * 2) % 4], seq.bt, inBar === 0 ? 0.07 : 0.05); pluck(arp[(inBar * 2 + 1) % 4], seq.bt + B / 2, 0.04);
+      if (T.drum) tabor(seq.bt, inBar === 0 ? 1 : 0.55);
+      seq.bt += B; seq.b++;
+    }
+  }
+
   const S = {
     init,
-    setMuted(m) { muted = m; },
+    setMuted(m) { muted = m; if (musicBus) musicBus.gain.setTargetAtTime(!m && musicOn ? MUSIC_VOL : 0, ctx.currentTime, 0.2); },
     isMuted: () => muted,
 
     fart(big) {
@@ -174,6 +243,17 @@
     oink() {
       if (!ok()) return; const t = now(); osc('sawtooth', 150, 90, t, 0.18, 0.25); osc('sawtooth', 130, 80, t + 0.2, 0.2, 0.25);
     },
+    flap() { // szárnycsapás
+      if (!ok()) return; const t = now(); const f = noise(t, 0.35, 0.35, 'lowpass', 260, 1.5); f.frequency.exponentialRampToValueAtTime(700, t + 0.12); f.frequency.exponentialRampToValueAtTime(180, t + 0.33); osc('sine', 70, 40, t, 0.25, 0.25);
+    },
+    drum(dur) { // pergődob (kivégzés előtt): gyorsuló, erősödő pergés, a végén nagy ütés
+      if (!ok()) return; const t = now(); dur = dur || 2;
+      for (let x = 0; x < dur; x += 0.05) { const k = x / dur; noise(t + x, 0.05, 0.05 + 0.2 * k, 'bandpass', 1500 + 600 * k, 1.2); if ((x * 20 | 0) % 4 === 0) osc('sine', 140, 90, t + x, 0.06, 0.05 + 0.1 * k); }
+      osc('sine', 120, 45, t + dur, 0.5, 0.6); noise(t + dur, 0.3, 0.35, 'lowpass', 900, 1);
+    },
+    setMusic(on) { musicOn = !!on; try { localStorage.setItem('ps_music', on ? '1' : '0'); } catch (e) { /* */ } if (musicBus) musicBus.gain.setTargetAtTime(on && !muted ? MUSIC_VOL : 0, ctx.currentTime, 0.3); },
+    musicOn: () => musicOn,
+    mood(m) { if (m === mood) return; mood = m; if (ctx) startMood(m); },
     rand() { const a = ['fart', 'fart', 'honk', 'burp', 'laugh', 'chicken']; S[a[Math.floor(Math.random() * a.length)]](); },
   };
   root.SFX = S;

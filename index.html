@@ -30,6 +30,8 @@
     <symbol id="i-sword" viewBox="0 0 32 32"><g stroke="#2b1b10" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"><path d="M25 3l4 4-13 13-4-4z" fill="#cfd5dd"/><path d="M10 14l8 8M6 26l5-5" fill="none" stroke-width="2.4"/><path d="M12 22l-3 3-3-1 1-3z" fill="#8a5a2b"/><rect x="8.5" y="15" width="9" height="3" transform="rotate(45 13 16.5)" fill="#d9a935"/></g></symbol>
     <symbol id="i-key" viewBox="0 0 32 32"><g stroke="#2b1b10" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"><circle cx="11" cy="11" r="6" fill="#d9a935"/><circle cx="11" cy="11" r="2" fill="#efe3c0"/><path d="M15 15l12 12M22 22l3-3M25 25l3-3" fill="none" stroke-width="2.6"/></g></symbol>
     <symbol id="i-jester" viewBox="0 0 32 32"><g stroke="#2b1b10" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"><path d="M5 14L3 4l8 5 5-6 5 6 8-5-2 10z" fill="#b8322a"/><circle cx="3" cy="4" r="2" fill="#d9a935"/><circle cx="16" cy="3" r="2" fill="#d9a935"/><circle cx="29" cy="4" r="2" fill="#d9a935"/><ellipse cx="16" cy="21" rx="8.5" ry="8" fill="#f3dfc3"/><path d="M12 20h.1M20 20h.1M12 25q4 3 8 0" fill="none" stroke-width="2"/></g></symbol>
+    <symbol id="i-lute" viewBox="0 0 32 32"><g stroke="#2b1b10" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"><ellipse cx="12" cy="21" rx="8" ry="7.5" transform="rotate(-40 12 21)" fill="#c9923a"/><circle cx="12.5" cy="20.5" r="2.2" fill="#2b1b10"/><path d="M17 15l9-9" stroke-width="3" fill="none"/><path d="M24 4l4 4-2 2-4-4z" fill="#8a5a2b"/><path d="M9 25l11-11M8 23l11-11" stroke-width=".7" fill="none"/></g></symbol>
+    <symbol id="i-talk" viewBox="0 0 32 32"><g stroke="#2b1b10" stroke-width="1.6" stroke-linejoin="round" stroke-linecap="round"><path d="M5 7h22v13H15l-6 5v-5H5z" fill="#fffbe6"/><path d="M9 12h14M9 16h9" fill="none"/></g></symbol>
     <symbol id="i-kings" viewBox="0 0 32 32"><g stroke="#2b1b10" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"><path d="M3 12l3-6 3 4 3-5 3 7z" fill="#d9a935"/><path d="M17 12l3-6 3 4 3-5 3 7z" fill="#d9a935" transform="translate(-1 6)"/><path d="M5 12h10v12H5zM16 18h11v10H16z" fill="#efe3c0" opacity=".0"/></g></symbol>
   </defs>
 </svg>
@@ -52,6 +54,8 @@
       <button id="bUndo"><svg><use href="#i-undo"/></svg><small>Vissza</small></button>
       <button id="bFlip"><svg><use href="#i-flip"/></svg><small>Fordít</small></button>
       <button id="bMute"><svg><use href="#i-bell"/></svg><small>Harang</small></button>
+      <button id="bMusic"><svg><use href="#i-lute"/></svg><small>Lant</small></button>
+      <button id="bTalk"><svg><use href="#i-talk"/></svg><small>Szó: kevés</small></button>
       <button id="bMenu"><svg><use href="#i-scroll"/></svg><small>Tekercs</small></button>
     </div>
   </div>
@@ -78,7 +82,9 @@
     <button class="big" id="btnLocal"><svg class="ic"><use href="#i-kings"/></svg>Két úr egy asztalnál</button>
     <div class="row-label">Grafika (gyengébb telefonhoz)</div>
     <div class="seg" id="perfSeg"><button data-v="auto" class="on">Magától</button><button data-v="low">Kíméletes</button><button data-v="high">Pazar</button></div>
-    <div class="opts"><label><input type="checkbox" id="optFast"> Sietős mészárlás (gyors mozgás)</label></div>
+    <div class="row-label">Beszólások (szövegbuborékok)</div>
+    <div class="seg" id="talkSeg"><button data-v="many">Sok</button><button data-v="few" class="on">Kevés</button><button data-v="off">Csend</button></div>
+    <div class="opts"><label><input type="checkbox" id="optFast"> Sietős mészárlás (gyors mozgás)</label><label><input type="checkbox" id="optMusic" checked> Lantos zene (középkori dallamok)</label></div>
     <div class="rule"></div>
     <button class="big" id="btnShareGame"><svg class="ic"><use href="#i-share"/></svg>Hírnököt küldök a barátaimnak</button>
     <button class="big alt hidden" id="btnInstall">Vidd haza a várat (telepítés)</button>
