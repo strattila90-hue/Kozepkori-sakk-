@@ -27,22 +27,22 @@
     paintSw();
     $('sideSeg').querySelectorAll('button').forEach(b => { b.onclick = () => { hostSide = b.dataset.v; $('sideSeg').querySelectorAll('button').forEach(x => x.classList.toggle('on', x === b)); }; });
     const q = new URLSearchParams(location.search).get('room'); if (q) $('code').value = q.toUpperCase().slice(0, 5);
-    if (!Net.available()) { const n = $('onlineNote'); n.classList.remove('hidden'); n.textContent = 'Online mód: még hiányzik az apiKey a firebase-config.js-ből – addig a bot és a helyi mód működik.'; }
+    if (!Net.available()) { const n = $('onlineNote'); n.classList.remove('hidden'); n.textContent = 'A hírnökök még nem kaptak útlevelet (hiányzik az apiKey a firebase-config.js-ből), az online viadal addig nem él. A bolond és a közös asztal működik.'; }
     const ses = store.get('ps_session');
-    if (ses && Net.available()) { try { const s = JSON.parse(ses); $('btnResume').textContent = '↩ Folytatás (' + s.code + ')'; $('btnResume').classList.remove('hidden'); $('btnResume').onclick = () => joinOnline(s.code); } catch (e) { /* hibás */ } }
+    if (ses && Net.available()) { try { const s = JSON.parse(ses); $('btnResume').textContent = 'Visszatérés a várba (' + s.code + ')'; $('btnResume').classList.remove('hidden'); $('btnResume').onclick = () => joinOnline(s.code); } catch (e) { /* hibás */ } }
     $('btnCreate').onclick = createOnline; $('btnJoin').onclick = () => joinOnline($('code').value);
     $('btnBot').onclick = () => startBot(+$('botLevel').value); $('btnLocal').onclick = startLocal;
     $('optFast').onchange = e => { W.speed = e.target.checked ? 1.7 : 1; };
-    $('btnCopy').onclick = async () => { try { await navigator.clipboard.writeText(G.code); UI.toast('Kód másolva!'); } catch (e) { UI.toast(G.code); } };
+    $('btnCopy').onclick = async () => { try { await navigator.clipboard.writeText(G.code); UI.toast('Jel lemásolva!'); } catch (e) { UI.toast(G.code); } };
     $('btnShare').onclick = async () => {
       const url = location.origin + location.pathname + '?room=' + G.code;
-      try { if (navigator.share) await navigator.share({ title: 'Parasztsakk', text: 'Gyere sakkozni, paraszt! Kód: ' + G.code, url }); else { await navigator.clipboard.writeText(url); UI.toast('Link másolva!'); } } catch (e) { /* mégse */ }
+      try { if (navigator.share) await navigator.share({ title: 'Parasztsakk', text: 'Gyere sakkozni, paraszt! Kód: ' + G.code, url }); else { await navigator.clipboard.writeText(url); UI.toast('Hírnök-levél másolva!'); } } catch (e) { /* mégse */ }
     };
-    $('btnLobbyCancel').onclick = toMenu; $('btnToMenu').onclick = toMenu; $('bMenu').onclick = () => { if (G.over || confirm('Kilépsz a játszmából?')) toMenu(); };
+    $('btnLobbyCancel').onclick = toMenu; $('btnToMenu').onclick = toMenu; $('bMenu').onclick = () => { if (G.over || confirm('Elhagyod a csatamezőt?')) toMenu(); };
     $('btnAgain').onclick = () => { if (G.mode === 'bot') startBot(G.level); else if (G.mode === 'local') startLocal(); else toMenu(); };
   }
   function paintSw() { $('swatches').querySelectorAll('button').forEach(b => b.classList.toggle('on', b.dataset.id === myTheme)); }
-  const FUNNY = ['Pocak Pista', 'Büdös Bence', 'Sáros Sanyi', 'Kövér Kata', 'Orrfúró Ödön', 'Mókus Jóska', 'Pukizó Pál', 'Rühes Rozi', 'Csorba Gyuri'];
+  const FUNNY = ['Pocak Pista', 'Büdös Bence', 'Sáros Sanyi', 'Kövér Kata', 'Orrfúró Ödön', 'Mókus Jóska', 'Pukizó Pál', 'Rühes Rozi', 'Csorba Gyuri', 'Kecskepásztor Kelemen'];
   const myName = () => { let n = $('name').value.trim(); if (!n) { n = FUNNY[Math.floor(Math.random() * FUNNY.length)]; $('name').value = n; } store.set('ps_name', n); return n; };
   const otherTheme = t => { const o = THEME_IDS.filter(x => x !== t); return o[Math.floor(Math.random() * o.length)]; };
 
@@ -73,7 +73,7 @@
     $('meName').textContent = G.names.w; $('oppName').textContent = G.names.b;
   }
   function startBot(level) {
-    SFX.init(); G.level = level; const t = myTheme, lv = ['', 'Részeg paraszt', 'Falusi bíró', 'Hadvezér'][level];
+    SFX.init(); G.level = level; const t = myTheme, lv = ['', 'Részeg jobbágy', 'Falusi bíró', 'Hadúr'][level];
     begin({ mode: 'bot', mySide: 'w', names: { w: myName(), b: lv }, themeIds: { w: t, b: otherTheme(t) } });
   }
 
@@ -82,7 +82,7 @@
     SFX.init();
     try {
       const side = hostSide === 'r' ? (Math.random() < 0.5 ? 'w' : 'b') : hostSide;
-      UI.toast('Szoba nyitása…');
+      UI.toast('Vár nyitása…');
       const code = await Net.createRoom({ name: myName(), theme: myTheme, side });
       G.code = code; G.role = 'host'; store.set('ps_session', JSON.stringify({ code }));
       $('lobbyCode').textContent = code; show('lobby'); watchRoom(code);
@@ -90,7 +90,7 @@
   }
   async function joinOnline(code) {
     SFX.init(); code = (code || '').trim().toUpperCase();
-    if (code.length !== 5) { UI.toast('Adj meg 5 jegyű kódot!', 'bad'); return; }
+    if (code.length !== 5) { UI.toast('Írd be az 5 jegyű jelet!', 'bad'); return; }
     try {
       const r = await Net.joinRoom(code, { name: myName(), theme: myTheme });
       G.code = code; G.role = r.role; store.set('ps_session', JSON.stringify({ code }));
@@ -100,7 +100,7 @@
   }
   function watchRoom(code) {
     if (G.unsub) G.unsub();
-    G.unsub = Net.subscribe(code, onRoom, e => { console.error(e); UI.toast('Kapcsolati hiba', 'bad'); });
+    G.unsub = Net.subscribe(code, onRoom, e => { console.error(e); UI.toast('A hírnök elvesztette a lovát', 'bad'); });
   }
   function onRoom(d) {
     G.room = d;
@@ -108,7 +108,7 @@
     if (!G.mode && d.guestId) { // játék indul
       const hs = d.hostSide, mySide = iAmHost ? hs : (hs === 'w' ? 'b' : 'w');
       const hostTheme = d.hostTheme, guestTheme = d.guestTheme;
-      const names = {}; names[hs] = d.hostName; names[hs === 'w' ? 'b' : 'w'] = d.guestName || 'Vendég';
+      const names = {}; names[hs] = d.hostName; names[hs === 'w' ? 'b' : 'w'] = d.guestName || 'Ismeretlen lovag';
       const themeIds = {}; themeIds[hs] = hostTheme; themeIds[hs === 'w' ? 'b' : 'w'] = guestTheme;
       const code = G.code, role = G.role;
       begin({ mode: 'online', mySide, names, themeIds, keepSub: true });
@@ -129,7 +129,7 @@
       const r = d.result; G.queue.push({ result: r }); pump();
     }
     if (d.emote && d.emote.n > G.lastEmote) { G.lastEmote = d.emote.n; if (d.emote.by !== G.mySide) W.emote(d.emote.by, d.emote.kind); }
-    if (d.draw && d.draw !== G.mySide && !G.over) UI.toast('Az ellenfél döntetlent kínál', '');
+    if (d.draw && d.draw !== G.mySide && !G.over) UI.toast('Az ellenfél békét ajánl', '');
     updateHud();
   }
 
@@ -175,13 +175,13 @@
     W.godOn = false; await W.playEnding(res);
     if (G.mode === 'online') store.set('ps_session', '');
     let title, sub;
-    const reasons = { checkmate: 'Sakk-matt!', resign: 'Feladás', stalemate: 'Patt – senki sem tud lépni', 'draw-insufficient': 'Kevés anyag – senki sem tud matt adni', 'draw-50': '50 lépés semmi', 'draw-repetition': 'Háromszori ismétlés', 'draw-agreed': 'Közös megegyezés' };
-    if (!res.winner) { title = 'DÖNTETLEN'; }
-    else if (G.mySide) title = res.winner === G.mySide ? 'GYŐZELEM!' : 'VERESÉG';
-    else title = (res.winner === 'w' ? 'Világos' : 'Sötét') + ' nyert!';
+    const reasons = { checkmate: 'A király elesett.', resign: 'A másik megadta magát.', stalemate: 'Patt: a Fekete Halál döntött.', 'draw-insufficient': 'Kevés a bábu a mattolásra.', 'draw-50': 'Ötven lépés, és semmi vér.', 'draw-repetition': 'Háromszor ugyanaz a táncrend.', 'draw-agreed': 'Békét kötöttek.' };
+    if (!res.winner) { title = 'Béke'; }
+    else if (G.mySide) title = res.winner === G.mySide ? 'Dicsőség!' : 'Gyász!';
+    else title = (res.winner === 'w' ? 'Világos' : 'Sötét') + ' győzött!';
     sub = reasons[res.type] || '';
     $('resTitle').innerHTML = '<span class="word">' + title + '</span>'; $('resSub').textContent = sub;
-    $('btnAgain').textContent = G.mode === 'online' ? 'Új játék (menü)' : 'Még egyet!';
+    $('btnAgain').textContent = G.mode === 'online' ? 'Új csata (a várba)' : 'Még egy csata!';
     show('result');
   }
 
@@ -218,9 +218,9 @@
     const t = $('turnBadge'), mine = G.mode === 'local' || G.chess.turn === G.mySide;
     if (!G.mode) return;
     if (G.over) t.textContent = '';
-    else if (G.mode === 'local') t.textContent = (G.chess.turn === 'w' ? 'Világos' : 'Sötét') + ' jön';
-    else if (G.mode === 'online' && !(G.room && G.room.guestId)) t.textContent = 'Várakozás az ellenfélre…';
-    else t.textContent = mine ? 'Te jössz!' : 'Az ellenfél gondolkodik…';
+    else if (G.mode === 'local') t.textContent = (G.chess.turn === 'w' ? 'Világos' : 'Sötét') + ' lép, uram';
+    else if (G.mode === 'online' && !(G.room && G.room.guestId)) t.textContent = 'Az ellenfél még úton van…';
+    else t.textContent = mine ? 'A te lépésed, uram!' : 'Ellenfeled töpreng…';
     W.godOn = !G.over && mine && G.mode !== 'local';
     $('oppStat').textContent = ''; $('meStat').textContent = '';
     W.hl.check = G.chess.inCheck() ? G.chess.kingSq(G.chess.turn) : -1;
@@ -230,9 +230,9 @@
     c.addEventListener('pointerdown', e => { SFX.init(); const r = c.getBoundingClientRect(); const sq = W.hitTest(e.clientX - r.left, e.clientY - r.top); if (sq >= 0) onSquare(sq); else if (G.mode) deselect(); });
     $('bFart').onclick = () => emote('fart'); $('bNose').onclick = () => emote('nose');
     $('bFlip').onclick = () => { W.setFlip(!W.flip); };
-    $('bMute').onclick = () => { SFX.setMuted(!SFX.isMuted()); $('bMute').firstChild.textContent = SFX.isMuted() ? '🔇' : '🔊'; };
+    $('bMute').onclick = () => { SFX.setMuted(!SFX.isMuted()); $('bMute').classList.toggle('off', SFX.isMuted()); };
     $('bResign').onclick = async () => {
-      if (G.over || !G.mode || !confirm('Biztosan feladod?')) return;
+      if (G.over || !G.mode || !confirm('Biztosan megadod magad?')) return;
       const loser = G.mode === 'local' ? G.chess.turn : G.mySide;
       if (G.mode === 'online') { try { await Net.setResult(G.code, { type: 'resign', loser }); } catch (e) { UI.toast('Hiba a feladáskor', 'bad'); } }
       else finish({ type: 'resign', winner: loser === 'w' ? 'b' : 'w' });
@@ -241,7 +241,7 @@
       if (G.over || G.mode !== 'online' || !G.room) return;
       try {
         if (G.room.draw && G.room.draw !== G.mySide) await Net.setResult(G.code, { type: 'draw' });
-        else { await Net.offerDraw(G.code, G.mySide); UI.toast('Döntetlen-ajánlat elküldve'); }
+        else { await Net.offerDraw(G.code, G.mySide); UI.toast('Békeajánlat elküldve'); }
       } catch (e) { UI.toast('Hiba', 'bad'); }
     };
   }

@@ -1,47 +1,54 @@
-:root{--ink:#2a170b;--gold:#c99a2e;--parch1:#f3e2b0;--parch2:#d9bd7a;--wood:#5a3515}
+:root{--ink:#2b1b10;--gold:#d9a935;--parch1:#f6ebc6;--parch2:#e2c98a;--red:#b8322a;--blue:#3b5ea6}
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
-html,body{margin:0;height:100%;overflow:hidden;background:#2a170b;font-family:"IM Fell English",Georgia,serif;color:var(--ink);overscroll-behavior:none}
+html,body{margin:0;height:100%;overflow:hidden;background:#2f4d8c;font-family:"IM Fell English",Georgia,serif;color:var(--ink);overscroll-behavior:none}
 canvas{position:fixed;inset:0;display:block;touch-action:none}
 .hidden{display:none!important}
-#toast{position:fixed;left:50%;top:22%;transform:translate(-50%,-50%) scale(.6);font:700 clamp(30px,8vw,64px)/1.05 "UnifrakturCook",serif;width:92vw;text-align:center;color:#f3e2b0;-webkit-text-stroke:2px #2a170b;text-shadow:0 4px 0 #2a170b,0 0 24px rgba(0,0,0,.6);opacity:0;pointer-events:none;z-index:30;white-space:normal;transition:opacity .25s,transform .25s}
+svg.ic{width:22px;height:22px;vertical-align:-5px;margin-right:8px}
+#toast{position:fixed;left:50%;top:21%;transform:translate(-50%,-50%) scale(.6);font:700 clamp(30px,8vw,64px)/1.05 "UnifrakturCook",serif;width:92vw;text-align:center;color:#f6ebc6;-webkit-text-stroke:2px #2b1b10;text-shadow:0 4px 0 #2b1b10,0 0 24px rgba(0,0,0,.6);opacity:0;pointer-events:none;z-index:30;transition:opacity .25s,transform .25s}
 #toast.show{opacity:1;transform:translate(-50%,-50%) scale(1)}
-#toast.bad{color:#e23a2a}
+#toast.bad{color:#e8483a}
 #hud{position:fixed;inset:0;pointer-events:none;z-index:5;padding:env(safe-area-inset-top) 10px env(safe-area-inset-bottom)}
-.plate{pointer-events:none;display:inline-flex;align-items:center;gap:8px;background:linear-gradient(var(--parch1),var(--parch2));border:3px double #7a4a10;border-radius:12px;padding:6px 12px;font-size:17px;box-shadow:0 3px 8px rgba(0,0,0,.5)}
+.plate{pointer-events:none;display:inline-flex;align-items:center;gap:8px;background:linear-gradient(var(--parch1),var(--parch2));border:3px double var(--ink);outline:2px solid var(--gold);outline-offset:-6px;border-radius:6px;padding:7px 14px;font-size:18px;box-shadow:0 3px 8px rgba(0,0,0,.5)}
 .plate.top{margin-top:10px}
 .plate i{font-size:14px;opacity:.8}
 .sw{width:18px;height:18px;border-radius:50%;border:2px solid var(--ink);display:inline-block}
-#turnBadge{position:absolute;left:50%;top:calc(env(safe-area-inset-top) + 12px);transform:translateX(-50%);font:700 15px "IM Fell English",serif;background:var(--wood);color:#f3e2b0;border:2px solid var(--gold);border-radius:20px;padding:6px 14px;box-shadow:0 3px 8px rgba(0,0,0,.5);white-space:nowrap}
+#turnBadge{position:absolute;left:50%;top:calc(env(safe-area-inset-top) + 12px);transform:translateX(-50%);font:700 15px "IM Fell English",serif;background:var(--ink);color:#f6ebc6;border:2px solid var(--gold);border-radius:4px;padding:6px 14px;box-shadow:0 3px 8px rgba(0,0,0,.5);white-space:nowrap}
 #turnBadge:empty{display:none}
 #hud .bottom{position:absolute;left:10px;right:10px;bottom:calc(env(safe-area-inset-bottom) + 8px);display:flex;flex-direction:column;gap:8px;align-items:flex-start}
 .btns{display:flex;gap:6px;flex-wrap:wrap;pointer-events:auto}
-.btns button{display:flex;flex-direction:column;align-items:center;justify-content:center;width:52px;height:52px;font-size:22px;background:linear-gradient(#7a4a1f,var(--wood));border:2px solid var(--gold);color:#f3e2b0;border-radius:12px;box-shadow:0 3px 6px rgba(0,0,0,.5);cursor:pointer;padding:0;font-family:inherit}
-.btns button small{font-size:9px;line-height:1;margin-top:1px}
+.btns button{display:flex;flex-direction:column;align-items:center;justify-content:center;width:56px;height:56px;background:linear-gradient(var(--parch1),var(--parch2));border:3px double var(--ink);outline:1.5px solid var(--gold);outline-offset:-5px;color:var(--ink);border-radius:6px;box-shadow:0 3px 6px rgba(0,0,0,.5);cursor:pointer;padding:0;font-family:inherit}
+.btns button svg{width:26px;height:26px}
+.btns button small{font-size:10px;line-height:1;margin-top:2px}
 .btns button:active{transform:translateY(2px)}
-.screen{position:fixed;inset:0;z-index:20;display:flex;align-items:center;justify-content:center;background:radial-gradient(ellipse at center,rgba(30,15,5,.55),rgba(15,7,2,.9));overflow:auto;padding:14px}
-.panel{width:min(440px,100%);max-height:100%;overflow:auto;background:linear-gradient(var(--parch1),var(--parch2));border:5px double #7a4a10;border-radius:16px;padding:18px 18px 20px;box-shadow:0 10px 40px rgba(0,0,0,.7),inset 0 0 40px rgba(120,70,10,.35);text-align:center}
-.logo{font-family:"UnifrakturCook",serif;font-size:clamp(34px,9vw,52px);line-height:1;color:#7a1410;text-shadow:2px 2px 0 rgba(255,235,170,.7);display:flex;justify-content:center;align-items:baseline}
-.logo .drop{font-size:1.5em;color:#1d4f9a;background:linear-gradient(135deg,#e6bf4a,#b88a20);padding:0 .12em;border:3px solid var(--ink);border-radius:6px;margin-right:6px;text-shadow:none;transform:rotate(-3deg)}
-.sub{font-size:19px;font-style:italic;margin:4px 0 12px}
-label{display:block;text-align:left;font-size:15px;margin:8px 0}
-input[type=text],input:not([type]),input#name,input#code,select{width:100%;font:inherit;font-size:18px;padding:9px 11px;border:2px solid #7a4a10;border-radius:8px;background:#fbf1d2;color:var(--ink)}
-.row-label{text-align:left;font-size:14px;margin:12px 0 5px}
-.swatches{display:flex;gap:12px;justify-content:center;margin-bottom:6px}
-.swatches button{width:48px;height:48px;border-radius:50%;border:3px solid var(--ink);cursor:pointer;box-shadow:0 2px 4px rgba(0,0,0,.4);position:relative}
-.swatches button.on{outline:4px solid #1f9a3a;outline-offset:2px;transform:scale(1.1)}
-.seg{display:flex;border:2px solid #7a4a10;border-radius:8px;overflow:hidden}
-.seg button{flex:1;padding:8px;font:inherit;font-size:15px;background:#fbf1d2;border:0;cursor:pointer;color:var(--ink)}
-.seg button.on{background:var(--wood);color:#f3e2b0}
-button.big,#btnLobbyCancel,#btnResume{display:block;width:100%;margin-top:10px;padding:12px 14px;font:700 18px "IM Fell English",serif;color:#f3e2b0;background:linear-gradient(#7a4a1f,var(--wood));border:3px solid var(--gold);border-radius:10px;cursor:pointer;box-shadow:0 3px 6px rgba(0,0,0,.45)}
+.btns button.off svg{opacity:.35}
+.screen{position:fixed;inset:0;z-index:20;display:flex;align-items:center;justify-content:center;background:radial-gradient(ellipse at center,rgba(20,30,60,.45),rgba(10,12,30,.88));overflow:auto;padding:14px}
+.panel{width:min(440px,100%);max-height:100%;overflow:auto;background:radial-gradient(ellipse at 30% 20%,#fff6d4 0,transparent 55%),radial-gradient(ellipse at 80% 90%,#d3b574 0,transparent 55%),linear-gradient(var(--parch1),var(--parch2));border:12px solid;border-image:repeating-linear-gradient(90deg,#b8322a 0 14px,#efe3c0 14px 28px,#3b5ea6 28px 42px) 12;border-radius:0;padding:16px 18px 20px;box-shadow:0 10px 40px rgba(0,0,0,.7),inset 0 0 0 2px var(--ink),inset 0 0 50px rgba(150,100,30,.35);text-align:center}
+.logo{font-family:"UnifrakturCook",serif;font-size:clamp(36px,10vw,56px);line-height:1;color:#8a1c14;text-shadow:2px 2px 0 rgba(255,235,170,.8);display:flex;justify-content:center;align-items:baseline}
+.logo .drop{font-size:1.6em;color:#f6ebc6;background:linear-gradient(135deg,#3b5ea6,#27407a);padding:0 .14em;border:3px solid var(--ink);outline:2px solid var(--gold);outline-offset:-6px;margin-right:6px;text-shadow:1px 1px 0 var(--ink)}
+.sub{font-size:19px;font-style:italic;margin:4px 0 10px}
+.rule{height:10px;margin:10px 0;background:radial-gradient(circle,var(--ink) 0 2px,transparent 3px) center/16px 10px repeat-x;opacity:.7}
+label{display:block;text-align:left;font-size:16px;margin:8px 0}
+input[type=text],input:not([type]),select{width:100%;font:inherit;font-size:18px;padding:9px 11px;border:2px solid var(--ink);border-radius:3px;background:#fbf3d6;color:var(--ink)}
+.row-label{text-align:left;font-size:15px;margin:12px 0 5px}
+.swatches{display:flex;gap:14px;justify-content:center;margin-bottom:6px}
+.swatches button{width:46px;height:46px;border-radius:50%;border:3px solid var(--ink);cursor:pointer;box-shadow:0 2px 4px rgba(0,0,0,.4),inset 0 0 0 3px rgba(255,255,255,.25)}
+.swatches button.on{outline:3px solid var(--gold);outline-offset:3px;transform:scale(1.1)}
+.seg{display:flex;border:2px solid var(--ink);border-radius:3px;overflow:hidden}
+.seg button{flex:1;padding:8px;font:inherit;font-size:16px;background:#fbf3d6;border:0;border-right:1px solid var(--ink);cursor:pointer;color:var(--ink)}
+.seg button:last-child{border-right:0}
+.seg button.on{background:var(--ink);color:#f6ebc6}
+button.big{position:relative;display:block;width:100%;margin-top:10px;padding:11px 14px;font:700 19px "UnifrakturCook",serif;color:var(--ink);background:linear-gradient(#f3e0a4,#d6b765);border:3px double var(--ink);outline:2px solid var(--gold);outline-offset:-7px;cursor:pointer;box-shadow:0 3px 6px rgba(0,0,0,.45)}
+button.big::before,button.big::after{content:"";position:absolute;top:50%;width:8px;height:8px;margin-top:-4px;background:var(--red);border:1.5px solid var(--ink);transform:rotate(45deg)}
+button.big::before{left:9px}button.big::after{right:9px}
 button.big:active{transform:translateY(2px)}
-#btnLobbyCancel,#btnResume{background:linear-gradient(#9a8a6a,#6a5a3a);font-size:15px}
-.join{display:flex;gap:8px;align-items:stretch}.join>*{margin-top:10px}.join button.big{margin-top:10px}
-.join input,.join select{flex:0 0 38%;margin-top:10px}
+button.big.alt{background:linear-gradient(#d8cdb0,#b3a37a);font-size:17px}
+.join{display:flex;gap:8px;align-items:stretch}.join>*{margin-top:10px}
+.join input,.join select{flex:0 0 38%}
+.join button.big{margin-top:10px;padding-left:20px;padding-right:20px}
 #code{text-transform:uppercase;text-align:center;letter-spacing:4px}
-hr{border:0;border-top:2px dashed #7a4a10;margin:14px 0 4px;opacity:.5}
 .note{font-size:14px;margin-top:8px;font-style:italic}
 .opts{margin-top:10px;text-align:left}.opts label{display:flex;gap:8px;align-items:center;margin:4px 0}
-#lobbyCode{font:700 clamp(54px,16vw,86px) "UnifrakturCook",serif;letter-spacing:6px;color:#7a1410;text-shadow:2px 2px 0 rgba(255,235,170,.8);margin:6px 0}
-.wait{margin:16px 0 4px;font-size:17px}.wait span{animation:bl 1.2s infinite}.wait span:nth-child(2){animation-delay:.2s}.wait span:nth-child(3){animation-delay:.4s}
+#lobbyCode{font:700 clamp(54px,16vw,86px) "UnifrakturCook",serif;letter-spacing:6px;color:#8a1c14;text-shadow:2px 2px 0 rgba(255,235,170,.9);margin:6px 0}
+.wait{margin:16px 0 4px;font-size:17px;font-style:italic}.wait span{animation:bl 1.2s infinite}.wait span:nth-child(2){animation-delay:.2s}.wait span:nth-child(3){animation-delay:.4s}
 @keyframes bl{0%,100%{opacity:.2}50%{opacity:1}}
-#promoBtns{flex-wrap:wrap;justify-content:center}#promoBtns button{flex:1 1 40%;font-size:34px;padding:8px}
+#promoBtns{flex-wrap:wrap;justify-content:center}#promoBtns button{flex:1 1 40%;font-size:38px;padding:8px;font-family:serif}
